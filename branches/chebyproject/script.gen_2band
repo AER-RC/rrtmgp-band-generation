@@ -1,0 +1,420 @@
+#!/bin/tcsh
+#Created: Jennifer Delamere January 1999
+#INPUT: Type script.gen_2band DIRNAME where DIRNAME is the name of the
+#directory you want to create to store all the output.
+#NAMELIST NEEDED: Call it 'input_param'
+
+#Create a directory for the band you are interested in
+
+
+mkdir $1
+echo Create Directory: $1
+
+#Copy NAMELIST (used by f90 codes) file to the directories that need it.
+\cp input_param $1/. 
+\cp input_param lbl_f90/.
+
+#Now commence work in the new band directory
+cd $1
+
+
+#Get a copy of TAPE3 for lblrtm_f90 run
+\cp ../lbl_f90/TAPE3 .
+\cp ../central_exec_scripts/PRESSURE.PROFILE .
+
+#Set up arrtm_rad directory
+mkdir src_arrtm_$1
+
+\cp ../central_exec_scripts/arrtm_flux_src_template/*.f src_arrtm_$1/.
+\cp ../central_exec_scripts/arrtm_flux_src_template/INPUT_RRTM_MLS .
+\cp ../central_exec_scripts/arrtm_flux_src_template/INPUT_RRTM_SAW .
+\cp ../central_exec_scripts/arrtm_flux_src_template/INPUT_RRTM_TRP .
+\cp ../central_exec_scripts/arrtm_flux_src_template/make_arrtm_f90 src_arrtm_$1/.
+
+echo Writing TAPE5s
+#Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
+#Includes all absorbers, including the H20 continuum
+write_tape5 < input_param
+
+#Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
+#Do NOT include the H20 continuum
+write_tape5_nc < input_param
+
+#Generate TAPE5s for T(ref) and T(ref) - 15 for lower/upper atmospheres.
+write_tape5_minor < input_param
+
+#LOWER ATMOSPHERE
+#Each troposphere run (P > 100mb) has 13 layers.  Generate the 
+#k-distributions for 5 runs with T(ref), T(ref) +/- 15 K, 
+#T(ref) +/- 30 K.
+
+#Test to see if you are doing case of no or one or two major gases
+#by checking the existence of the tape5 files.
+
+
+if ( -e "tape5-T03-n01") then
+    @ jl=1
+    echo Two Key Species in Lower Atmosphere
+else
+    @ jl=9	
+    echo One Key Species in Lower Atmosphere
+endif
+
+if (-e "tape5nc-T03-n09") then
+    echo Starting
+else
+    echo No Key Species in Lower Atmosphere
+    @ jl = 11
+endif
+
+
+# loop over eta
+while ($jl < 10)
+    @ i=1
+# loop over reference temperatures
+    while ($i < 6)
+	echo eta = 0$jl tref = 0$i
+	set tape5nc = tape5nc-T0${i}-n0${jl}
+	set tape5od = tape5-T0${i}-n0${jl} 
+	set kgfile = KG-T0${i}-n0${jl}
+#Run LBLRTM_F90 without the WV continuum and without all absorbers except
+#key species
+	\cp ${tape5nc} TAPE5
+        lblrtm_f90
+#LBLRTM_F90 generates ODint_ files for each layer. Move
+#these to another filename
+	script.mv_files 13 ODint_ NCint_
+#Run LBLRTM_F90 with all the absorbers including continua except WV.
+	\rm TAPE5
+	\cp ${tape5od} TAPE5
+	lblrtm_f90
+	kdis_2sort_l < input_param 
+#The output of absorption coefficients in file CK_ABS.DAT
+#to reference file
+        \mv -f CK_ABS.DAT ${kgfile}
+
+	if ($i == 3) then
+	    script.mv_files 13 ODint_ ODtmp_
+	    @ k=1
+	    while ($k < 8)
+		if (-e "tape5nc-minor0"$k"-T03") then
+		echo Calculating Minor Gas ${k}
+		@ k1 = 2
+		while (${k1} < 4) 
+		set tape5minor = tape5nc-minor0${k}-T0${k1}
+		set kgminor =  KG-minor0$k-T0${k1}-n0${jl}
+		\cp ${tape5minor} TAPE5
+		lblrtm_f90
+		script.mv_files 13 ODint_ NCint_
+		script.cp_files 13 ODtmp_ ODint_
+ 		\rm input_minor
+		echo " &igaspar igas_on="$k" iatmtype=1/" > tmp
+		cat input_param tmp > input_minor
+		\rm tmp
+		kdis_2sort_minor < input_minor
+	 	\mv -f CK_ABS_MINOR.DAT ${kgminor}		
+		@ k1++
+		end
+		endif
+		@ k++
+	    end	
+	endif
+
+	\rm OD*
+        \rm NC*
+#Advance counter and run another reference TAPE5 file
+	@ i++
+    end
+    @ jl++
+end
+
+echo Starting Upper
+# Repeat for UPPER ATMOSPHERE
+
+
+
+if ( -e "tape5-T08-n01") then
+    @ ju=1
+    echo Two Key Species in Upper Atmosphere
+else
+    @ ju=9
+    echo One Key Species in Upper Atmosphere
+endif
+
+if (-e "tape5nc-T08-n09") then
+    echo Starting
+else
+    echo No Key Species in Upper Atmosphere
+    @ ju = 11
+endif
+
+
+while ($ju < 10)
+    @ i=6
+    while ($i < 11)
+	echo eta = 0$ju tref = 0$i
+	if ($i < 10) then
+	    set tape5nc = tape5nc-T0${i}-n0${ju}
+	    set tape5od = tape5-T0${i}-n0${ju} 
+	    set kgfile = KG-T0${i}-n0${ju}
+	else
+	    set tape5nc = tape5nc-T${i}-n0${ju}
+	    set tape5od = tape5-T${i}-n0${ju} 	
+	    set kgfile = KG-T${i}-n0${ju}
+	endif
+        \rm TAPE5
+	\cp ${tape5nc} TAPE5
+	lblrtm_f90
+	script.mv_files 47 ODint_ NCint_ 
+	\rm TAPE5
+	\cp ${tape5od} TAPE5
+	lblrtm_f90
+	kdis_2sort_u < input_param
+	\mv -f CK_ABS.DAT ${kgfile}
+
+	if ($i == 8) then
+	    script.mv_files 47 ODint_ ODtmp_
+	    @ k=1
+	    while ($k < 8)
+		if (-e "tape5nc-minor0"$k"-T08") then
+		echo Calculating Minor Gas ${k}
+		@ k1 = 7
+		while (${k1} < 9) 
+		set tape5minor = tape5nc-minor0${k}-T0${k1}
+		set kgminor =  KG-minor0$k-T0${k1}-n0${ju}
+		\cp ${tape5minor} TAPE5
+		lblrtm_f90
+		script.mv_files 47 ODint_ NCint_
+		\rm TAPE5
+		script.cp_files 47 ODtmp_ ODint_
+		\rm input_minor
+		echo " &igaspar igas_on="$k" iatmtype=2/" > tmp
+		cat input_param tmp > input_minor
+		\rm tmp
+		kdis_2sort_minor < input_minor
+	 	\mv -f CK_ABS_MINOR.DAT ${kgminor}		
+		@ k1++
+		end
+		endif
+		@ k++
+	    end	
+	endif
+	\rm OD*
+        \rm NC*
+	@ i++
+    end
+    @ ju = $ju + 2
+end
+
+echo 'Writing absorption coefficients to file'
+
+write_data_kminor < input_param
+write_data_multiple < input_param
+
+#Generate continuum and planck sort
+
+echo Finish Absorption Coefficients
+
+script.gen_contin.flux
+
+\cp kg_cont.f src_arrtm_$1/.
+\cp kg_planck.f src_arrtm_$1/.
+
+#Generate the necessary Planck information to be used as
+#input to ARRTM. This information is compiled into a file
+#called block_planck which is then transfered into ARRTM
+#program ASETCOEF.F
+
+echo 'Generating Planck functions for band'
+planck_int < input_param
+
+\cp avplank_01.f src_arrtm_$1/.
+\mv DATA.KG k_gB01.f
+\cp k_gB01.f src_arrtm_$1/.
+\cp kg_minor.f src_arrtm_$1/.
+
+#Remove all excess files from the band directory before
+#leaving it.
+\rm OD*
+\rm NC*
+\rm TAPE3
+\rm TAPE9
+\rm TAPE10
+\rm TAPE11
+\rm TAPE12
+
+#Now go to the ARRTM directory and run the code to
+#calculate the fluxes in your band.
+
+cd src_arrtm_$1/.
+
+\rm k_g.o
+\rm asetcoef.o
+
+echo 'Compiling new ARRTM source code'
+make -f make_arrtm_f90
+cd ..
+
+\rm arrtm
+ln -s src_arrtm_$1/arrtm .
+
+\cp INPUT_RRTM_MLS INPUT_RRTM
+
+arrtm < input_param 
+
+#After generating the information for your band, copy it
+#to the band directory for safekeeping.
+\mv OUTPUT_RRTM OUTPUT_ARRTM_MLS
+
+#SAW comparison
+\cp INPUT_RRTM_SAW INPUT_RRTM
+arrtm < input_param
+\mv OUTPUT_RRTM OUTPUT_ARRTM_SAW
+
+#TRP comparison
+\cp INPUT_RRTM_TRP INPUT_RRTM
+arrtm < input_param
+\mv OUTPUT_RRTM OUTPUT_ARRTM_TRP
+\rm INPUT_RRTM
+
+#Generate comparison product using MLS LBLRTM_F90 in flux mode.
+cd ../lbl_f90
+
+\rm TAPE5_MLSRD
+\rm TAPE5_MLSOD
+\rm RADINIT
+\rm template_mlsod
+
+echo 'Running LBLRTM_F90 for MLS'
+#This run of LBLRTM_F90 generates the optical depth files for the given atmosphere
+write_tape5_MLSRD < input_param
+\cp ../central_exec_scripts/template_mls .
+cat template_mlsod template_mls > TAPE5_MLSOD
+\cp TAPE5_MLSOD TAPE5
+lblrtm_f90
+
+#This run of LBLRTM_F90 generates the radiances at 3 given quadrature angles
+\cp TAPE5_MLSRD TAPE5
+lblrtm_f90
+
+#This program sums the radiances into fluxes. It uses the input file RADINIT.
+radsum.x
+
+#Remove extra files and copy relevant files to the band section.
+\rm template_mlsod
+\rm template_mls
+\rm TAPE5
+\rm TAPE6
+\rm TAPE9
+\rm TAPE10
+\rm TAPE11
+\rm TAPE12
+\rm TAPE13
+\rm TAPE61
+\rm TAPE62
+\rm TAPE63
+\rm TAPE31
+\rm TAPE32
+\rm TAPE33
+\rm OD*
+
+\mv TAPE5_MLSOD ../$1/.
+\mv TAPE5_MLSRD ../$1/.
+\mv flxupdn.dat ../$1/OUTPUT_LBLRTM_MLS
+\mv RADINIT ../$1/RADINIT_MLS
+
+#Generate comparison product using SAW LBLRTM_F90 in flux mode.
+
+\rm TAPE5_SAWRD
+\rm TAPE5_SAWOD
+\rm RADINIT
+\rm template_sawod
+\rm template_saw
+
+echo 'Running LBLRTM_F90 for SAW'
+#This run of LBLRTM_F90 generates the optical depth files for the given atmosphere
+write_tape5_SAWRD < input_param
+\cp ../central_exec_scripts/template_saw .
+cat template_sawod template_saw > TAPE5_SAWOD
+\cp TAPE5_SAWOD TAPE5
+lblrtm_f90
+
+#This run of LBLRTM_F90 generates the radiances at 3 given quadrature angles
+\cp TAPE5_SAWRD TAPE5
+lblrtm_f90
+
+#This program sums the radiances into fluxes. It uses the input file RADINIT.
+radsum.x
+
+\mv TAPE5_SAWOD ../$1/.
+\mv TAPE5_SAWRD ../$1/.
+\mv flxupdn.dat ../$1/OUTPUT_LBLRTM_SAW
+\mv RADINIT ../$1/RADINIT_SAW
+\rm template_sawod
+\rm template_saw
+\rm TAPE5
+\rm TAPE6
+\rm TAPE9
+\rm TAPE10
+\rm TAPE11
+\rm TAPE12
+\rm TAPE13
+\rm TAPE61
+\rm TAPE62
+\rm TAPE63
+\rm TAPE31
+\rm TAPE32
+\rm TAPE33
+\rm OD*
+
+rm TAPE5_TRPRD
+rm TAPE5_TRPOD
+rm RADINIT
+rm template_trpod
+rm template_trp
+
+echo 'Running LBLRTM_F90 for TRP'
+#This run of LBLRTM_F90 generates the optical depth files for the given atmosphere
+write_tape5_TRPRD < input_param
+\cp ../central_exec_scripts/template_trp .
+cat template_trpod template_trp > TAPE5_TRPOD
+\cp TAPE5_TRPOD TAPE5
+lblrtm_f90
+
+#This run of LBLRTM_F90 generates the radiances at 3 given quadrature angles
+\cp TAPE5_TRPRD TAPE5
+lblrtm_f90
+
+#This program sums the radiances into fluxes. It uses the input file RADINIT.
+radsum.x
+
+\mv TAPE5_TRPOD ../$1/.
+\mv TAPE5_TRPRD ../$1/.
+\mv flxupdn.dat ../$1/OUTPUT_LBLRTM_TRP
+\mv RADINIT ../$1/RADINIT_TRP
+
+\rm template_trpod
+\rm template_trp
+\rm input_param
+\rm TAPE5
+\rm TAPE6
+\rm TAPE9
+\rm TAPE10
+\rm TAPE11
+\rm TAPE12
+\rm TAPE13
+\rm TAPE61
+\rm TAPE62
+\rm TAPE63
+\rm TAPE31
+\rm TAPE32
+\rm TAPE33
+\rm OD*
+
+echo 'All output in directory '$1
+
+
+
+
+
+
