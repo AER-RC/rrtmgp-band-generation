@@ -1,40 +1,56 @@
-#  for debugging, use these options
+#
 
-SRC1 = \
-	kdis_2sort_l.f \
-	kdis_2sort_u.f \
-        kdis_2sort_planck.f \
-        kdis_2sort_for.f \
-        kdis_2sort_minor.f \
-        kdis_2sort_self.f 
+OBJPATH = ../objdir
+
+SRCPATH = .
+
+VPATH = $(SRCPATH): $(OBJPATH)
+
+
+
+OBJ1 = \
+	kdis_2sort_l \
+	kdis_2sort_u \
+        kdis_2sort_planck \
+        kdis_2sort_for \
+        kdis_2sort_minor \
+        kdis_2sort_self 
          
 
-SRC2 = \
-	write_tape5.f \
-	write_tape5_nc.f \
-	write_tape5_minor.f \
+OBJ2 = \
+	write_tape5 \
+	write_tape5_nc \
+	write_tape5_minor \
 
-SRC3 = \
-	write_data_cont.f \
-	write_data_kminor.f \
-	write_data_multiple.f \
-	write_data_planck.f \
-        planck_int.f
+OBJ3 = \
+	write_data_cont \
+	write_data_kminor \
+	write_data_multiple \
+	write_data_planck \
+        planck_int
        
 
-EXEC1=\
-	$(SRC1:.f=)
 
-EXEC2=\
-	$(SRC2:.f=)
+all: makedir	$(OBJ1) $(OBJ2) $(OBJ3)  conclude
 
-EXEC3=\
-	$(SRC3:.f=)
+planck_int: planck_int.f r1mach.o
+	pgf90  planck_int.f r1mach.o -o $(OBJPATH)/planck_int
 
-
-all:		$(EXEC1) $(EXEC2) $(EXEC3) 
+r1mach.o: r1mach.f
+	pgf90 -c -o r1mach.o r1mach.f
 
 
-% : %.f 
-	pgf90  $< -o $@
+% :%.f 
+	pgf90  $< -o $(OBJPATH)/$@
 
+
+.SILENT:
+
+makedir :
+	if [ ! -d $(OBJPATH) ] ; \
+	then \
+	mkdir $(OBJPATH) ; \
+	fi
+
+conclude:
+	rm *.o
