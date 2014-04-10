@@ -71,7 +71,7 @@ C     the units of pressure.
      &     '90','91','92','93','94','95','96','97','98','99'/
 c Define the continuum to be ON where icn(1) => lower atmosphere and 
 c icn(2) => upper atmosphere.
-      DATA icn /1,1/
+      DATA icn /6,6/
 
       include 'std_atmos.f'
 
@@ -98,10 +98,15 @@ C outside the boundary of this region.
          ENDIF
  510  CONTINUE
 
+
 C Temporary solution for setting up number of points going into the calculation of k.
+      DVOUT = 3.0e-5
       IF (WAVENUM1.GE.125.AND.WAVENUM1.LT.240.)  DVOUT=0.00002
       IF (WAVENUM1.GE.240.AND.WAVENUM1.LE.325.)  DVOUT=0.00004
       IF (WAVENUM1.GT.325.)  DVOUT=0.00005
+      IF (WAVENUM1.GT.1300.)  DVOUT=0.0002
+      IF (WAVENUM1.GT.1700.)  DVOUT=0.0003
+      IF (WAVENUM1.GT.2590.)  DVOUT=0.00045
 
 C Pressure Profile provides the grid on which the k's will be stored. These
 c therefore provide the pressure layers used in TAPE5.
@@ -175,11 +180,6 @@ C     Interpolate in ln(pressure).
  1000 CONTINUE
       CLOSE(10)
 
-C Define value for continuum. Do not want to include the continuum from water
-c vapor but all others will be included. Choise of ICN = 4 represents including
-c all continuum BUT the foreign and self components of water vapor.
-      IF (IGAS1_L .EQ. 1 .OR. IGAS2_L .EQ. 1) ICN(1) = 4
-      IF (IGAS1_U .EQ. 1 .OR. IGAS2_U .EQ. 1) ICN(2) = 4
 
 C NO MAJOR GASES IN THE LOWER ATMOSPHERE
 
@@ -188,6 +188,23 @@ C NO MAJOR GASES IN THE LOWER ATMOSPHERE
 C  ONE MAJOR GAS, LOWER ATMOSPHERE : Write tape5's for situation 
 c     with one major gas.  Value of all gases EXCEPT the major gas are set to 0.0.
       IF (IGAS2_L. EQ. 0) THEN 
+
+C Determine values for continuum scale factor.  For the mappee run, want all
+C scale factors set to 0.0 EXCEPT that of the mappee. Water vapor as the
+C mappee is always set to 0.0
+
+         XSELFL = 0.0
+         XFRGNL = 0.0
+         XCO2CL = 0.0
+         XO3CNL = 0.0
+         XO2CNL = 0.0
+         XN2CNL = 0.0
+         XRAYLL = 0.0
+
+         IF (IGAS1_L .EQ. 2 ) XCO2CL = 1.0
+         IF (IGAS1_L .EQ. 3 ) XO3CNL = 1.0
+         IF (IGAS1_L .EQ. 7 ) XO2CNL = 1.0
+
          W = 0.0
          W(IGAS1_L,:) = W_ORIG(IGAS1_L,:)
          INDEX=1
@@ -203,6 +220,7 @@ c     with one major gas.  Value of all gases EXCEPT the major gas are set to 0.
             WRITE(20,104) ' HI=1 F4=1 CN=',ICN(1),
      &           ' AE=0 EM=0 SC=0 FI=0',
      &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
+            WRITE(20,105) XSELFL,XFRGNL,XCO2CL,XO3CNL,XO2CNL,XN2CNL,XRAYLL
             WRITE(20,106) WAVENUM1,WAVENUM2,dvout
             WRITE(20,107) ' 1 13 7   1.000000  ', 
      &           'MIDLATITUDE SUMM H1=   0.00 ',
@@ -230,19 +248,41 @@ c     with one major gas.  Value of all gases EXCEPT the major gas are set to 0.
             INDEX = INDEX + 1
  2500 CONTINUE
 
-C  ONE MAJOR GAS, LOWER ATMOSPHERE : Write tape5's for situation 
+C  TWO MAJOR GASES, LOWER ATMOSPHERE : Write tape5's for situation 
 c     with two major gases.  Value of all gases EXCEPT the major gas are set to 0.0.
       ELSE IF (IGAS2_L .NE. 0) THEN 
          DO 3750 IETA = 1,9
+
+C Determine values for continuum scale factor.  For the mappee run, want all
+C scale factors set to 0.0 EXCEPT that of the mappee. Water vapor as the
+C mappee is always set to 0.0
+
+            XSELFL = 0.0
+            XFRGNL = 0.0
+            XCO2CL = 0.0
+            XO3CNL = 0.0
+            XO2CNL = 0.0
+            XN2CNL = 0.0
+            XRAYLL = 0.0
+
             W=0.0
             IF (IETA .EQ. 1) THEN
                W(IGAS1_L,:) = 0.0
                W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
+               IF (IGAS2_L .EQ. 2) XCO2CL = 1.0
+               IF (IGAS2_L .EQ. 3) XO3CNL = 1.0
+               IF (IGAS2_L .EQ. 7) XO2CNL = 1.0
             ELSE
                IF (IETA .EQ. 9) THEN      
                   W(IGAS1_L,:) = W_ORIG(IGAS1_L,:)
                   W(IGAS2_L,:) = 0.0
+                  IF (IGAS1_L .EQ. 2) XCO2CL = 1.0
+                  IF (IGAS1_L .EQ. 3) XO3CNL = 1.0
+                  IF (IGAS1_L .EQ. 7) XO2CNL = 1.0
                ELSE
+                  IF (IGAS1_L .EQ. 2 .OR. IGAS2_L .EQ. 2) XCO2CL = 1.0
+                  IF (IGAS1_L .EQ. 3 .OR. IGAS2_L .EQ. 3) XO3CNL = 1.0
+                  IF (IGAS1_L .EQ. 7 .OR. IGAS2_L .EQ. 7) XO2CNL = 1.0
                   W(IGAS1_L,:) = W_ORIG(IGAS1_L,:)*
      &                 ETA(IETA)/(1. - ETA(IETA))
                   W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
@@ -262,6 +302,7 @@ c     with two major gases.  Value of all gases EXCEPT the major gas are set to 
             WRITE(20,104) ' HI=1 F4=1 CN=',ICN(1),
      &           ' AE=0 EM=0 SC=0 FI=0',
      &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
+            WRITE(20,105) XSELFL,XFRGNL,XCO2CL,XO3CNL,XO2CNL,XN2CNL,XRAYLL
             WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
             WRITE(20,107) ' 1 13 7   1.000000  ', 
      &              'MIDLATITUDE SUMM H1=   0.00 ',
@@ -298,7 +339,19 @@ C NO MAJOR GASES IN THE LOWER ATMOSPHERE
 
 C  ONE MAJOR GAS, UPPER ATMOSPHERE : Write tape5's for situation 
 c     with one major gas.  Value of all gases EXCEPT the major gas are set to 0.0.
-      IF (IGAS2_U .EQ. 0) THEN
+      IF (IGAS2_U .EQ. 0  .and. igas1_u .ne. 0) THEN
+         XSELFU = 0.0
+         XFRGNU = 0.0
+         XCO2CU = 0.0
+         XO3CNU = 0.0
+         XO2CNU = 0.0
+         XN2CNU = 0.0
+         XRAYLU = 0.0
+
+         IF (IGAS1_U .EQ. 2) XCO2CU = 1.0
+         IF (IGAS1_U .EQ. 3) XO3CNU = 1.0
+         IF (IGAS1_U .EQ. 7) XO2CNU = 1.0
+
          W = 0.0
          W(IGAS1_U,:) = W_ORIG(IGAS1_U,:)
          DO 4500 ITEMP = -2, 2
@@ -314,6 +367,7 @@ c            WRITE(20,101)
             WRITE(20,104) ' HI=1 F4=1 CN=',ICN(2),
      &           ' AE=0 EM=0 SC=0 FI=0',
      &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
+            WRITE(20,105) XSELFU,XFRGNU,XCO2CU,XO3CNU,XO2CNU,XN2CNU,XRAYLU
             WRITE(20,106) WAVENUM1,WAVENUM2,dvout
             WRITE(20,107) ' 1 47 7   1.000000  ', 
      &           'MIDLATITUDE SUMM H1=   0.00 ',
@@ -341,22 +395,39 @@ c            WRITE(20,101)
             INDEX = INDEX + 1
  4500 CONTINUE
 
-C     TWO MAJOR GAS, UPPER ATMOSPHERE : Write tape5's for situation 
+C     TWO MAJOR GASES, UPPER ATMOSPHERE : Write tape5's for situation 
 c     with two major gases.  Value of all gases EXCEPT the major gas are set to 0.0.
       ELSE IF (IGAS2_U .NE. 0) THEN
          DO 5750 IETA=1,9,2
+            XSELFU = 0.0
+            XFRGNU = 0.0
+            XCO2CU = 0.0
+            XO3CNU = 0.0
+            XO2CNU = 0.0
+            XN2CNU = 0.0
+            XRAYLU = 0.0
+
             W=0.0
             IF (IETA .EQ. 1) THEN
                W(IGAS1_U,:) = 0.0
                W(IGAS2_U,:) = W_ORIG(IGAS2_U,:)
+               IF (IGAS2_U .EQ. 2) XCO2CU = 1.0
+               IF (IGAS2_U .EQ. 3) XO3CNU = 1.0
+               IF (IGAS2_U .EQ. 7) XO2CNU = 1.0
             ELSE
                IF (IETA .EQ. 9) THEN      
                   W(IGAS1_U,:) = W_ORIG(IGAS1_U,:)
                   W(IGAS2_U,:) = 0.0
+                  IF (IGAS1_U .EQ. 2 ) XCO2CU = 1.0
+                  IF (IGAS1_U .EQ. 3 ) XO3CNU = 1.0
+                  IF (IGAS1_U .EQ. 7 ) XO2CNU = 1.0
                ELSE
                   W(IGAS1_U,:) = W_ORIG(IGAS1_U,:)
      &                 *ETA(IETA)/(1. - ETA(IETA))
                   W(IGAS2_U,:) = W_ORIG(IGAS2_U,:)
+                  IF (IGAS1_U .EQ. 2 .OR. IGAS2_U .EQ. 2) XCO2CU = 1.0
+                  IF (IGAS1_U .EQ. 3 .OR. IGAS2_U .EQ. 3) XO3CNU = 1.0
+                  IF (IGAS1_U .EQ. 7 .OR. IGAS2_U .EQ. 7) XO2CNU = 1.0
                ENDIF
             ENDIF
             INDEX = 6
@@ -373,7 +444,8 @@ c     with two major gases.  Value of all gases EXCEPT the major gas are set to 
             WRITE(20,104) ' HI=1 F4=1 CN=',ICN(2),
      &              ' AE=0 EM=0 SC=0 FI=0',
      &              ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
-               WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
+            WRITE(20,105) XSELFU,XFRGNU,XCO2CU,XO3CNU,XO2CNU,XN2CNU,XRAYLU
+            WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
             WRITE(20,107) ' 1 47 7   1.000000  ', 
      &              'MIDLATITUDE SUMM H1=   0.00 ',
      &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
@@ -410,6 +482,7 @@ c     with two major gases.  Value of all gases EXCEPT the major gas are set to 
  102  FORMAT(2(A40))
  103  FORMAT('$ STANDARD MID-LATITUDE SUMMER ATMOSPHERE')
  104  FORMAT(A14,i1,A20,A45)
+ 105  FORMAT(7F10.4)
  106  FORMAT(2f10.3,70x,e10.3)
  107  FORMAT(A20,A28,A12,A13)
  109  FORMAT('%%%%%')
