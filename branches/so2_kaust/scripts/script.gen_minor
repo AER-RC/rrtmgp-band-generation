@@ -9,7 +9,6 @@
 mkdir $1
 
 \cp input_param $1/input_param
-\cp input_param $1/input_param_$2
 
 cd $1
 
@@ -147,6 +146,4 @@ end
 echo 'Writing absorption coefficients to file'
 
 write_data_kminor < input_param
-\cp kg_minor.f kg_minor_$2.f
-\cp kg_minor.f src_arrtm_$1/.
 
