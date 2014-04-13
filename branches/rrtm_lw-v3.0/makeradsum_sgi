@@ -1,0 +1,8 @@
+radsum.x     :     radsum.o util_sgi.o
+	f90  -o radsum.x   radsum.o util_sgi.o
+#
+radsum.o: radsum.f
+	f90   -c  radsum.f
+#
+util_sgi.o: util_sgi.f
+	f90     -c util_sgi.f

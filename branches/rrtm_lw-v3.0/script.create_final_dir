@@ -1,0 +1,26 @@
+#!/bin/csh
+
+echo "Have you updated input_param.$1, kg_planck.f and kg_minor.f?"
+
+mkdir $1_final
+
+cd $1_final
+cp ../input_param.$1 .
+
+\cp ../test_$1/src_arrtm_test_$1/*.f .
+\cp ../central_exec_scripts/arrtm_flux_src_template/INPUT_RRTM_MLS .
+\cp ../central_exec_scripts/arrtm_flux_src_template/INPUT_RRTM_SAW .
+\cp ../central_exec_scripts/arrtm_flux_src_template/INPUT_RRTM_TRP .
+\cp ../central_exec_scripts/arrtm_flux_src_template/make_arrtm_f90 .
+
+gmake -f make_arrtm_f90
+
+foreach atmos (MLS SAW TRP)
+   \cp ../test_$1/TAPE5_${atmos}OD .
+   \cp ../test_$1/OUTPUT_LBLRTM_${atmos} .
+
+   echo 'Running ARRTM for '$atmos
+   \cp INPUT_RRTM_$atmos INPUT_RRTM
+   arrtm < input_param.$1 
+   \cp OUTPUT_RRTM OUTPUT_ARRTM_${atmos}
+end
