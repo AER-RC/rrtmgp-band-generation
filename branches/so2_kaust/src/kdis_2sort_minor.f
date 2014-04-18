@@ -35,6 +35,7 @@ c     ABSCOEF = CONTAVG(IG)*COLUMFAC or
 c                            CONTAVG(IG)*1.e20/Column amount
 C***************************************************
       PARAMETER (NLINES=5000000,MLAYERS=47,MG=16)
+      PARAMETER (MXMOL=9)
 
       IMPLICIT DOUBLE PRECISION (V)
       DOUBLE PRECISION XID(10),SECANT,HMOL(60),XALTZ(4),YID(10)
@@ -57,12 +58,12 @@ C***************************************************
       DIMENSION NPTS0(16),VCONTTOT(16)
       DIMENSION VCONTAVG(16),CONTAVG(16)
       DIMENSION IINDEX(NLINES),XTEMP(NLINES),J0MIN(16),J0MAX(16)
-      dimension igas_minor_l(7,1),igas_minor_u(7,1)
-      DIMENSION W_L_MLS(7,13)
-      DIMENSION W_H_MLS(7,47)
+      dimension igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
+      DIMENSION W_L_MLS(mxmol,13)
+      DIMENSION W_H_MLS(mxmol,47)
       
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,
-     &               IGAS1_U,IGAS2_U,igas_minor_l,igas_minor_u
+     &               IGAS1_U,IGAS2_U,igas_minor_l,igas_minor_u,nmol
       namelist /igaspar/ igas_on,iatmtype
 
       data igas_on/0/
@@ -129,11 +130,11 @@ C         Otherwise, read from the ODKD files (from LBLRTM).
 c          The NC- files represent the OD output from LBLRTM where you only 
 c          have one key species and all other species are set to zero.
          IF (LEVEL .LT. 10) THEN
+            FILE1 = 'ODint_00'//FNUM(LEVEL)
+            FILE2 = 'NCint_00'//FNUM(LEVEL)
+         ELSE 
             FILE1 = 'ODint_0'//FNUM(LEVEL)
             FILE2 = 'NCint_0'//FNUM(LEVEL)
-         ELSE 
-            FILE1 = 'ODint_'//FNUM(LEVEL)
-            FILE2 = 'NCint_'//FNUM(LEVEL)
          ENDIF
          OPEN(INF,FILE=FILE1,FORM='UNFORMATTED')
          OPEN(ICONT,FILE=FILE2,FORM='UNFORMATTED')

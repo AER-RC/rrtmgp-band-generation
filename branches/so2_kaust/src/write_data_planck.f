@@ -1,5 +1,6 @@
       PROGRAM WRITE_DATA_KMINOR
       
+      PARAMETER (MXMOL=9)
       CHARACTER*2 FNUM(99)
       CHARACTER*50 KG,contfile
 
@@ -17,7 +18,7 @@ c      REAL KA_2(9,5,13,16)
 c      REAL KB_2(9,5,13:59,16)
       REAL FRACREF(MG)
 
-      integer igas_minor_l(7,1),igas_minor_u(7,1)
+      integer igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
 
       DATA FNUM/'01','02','03','04','05','06','07','08','09',
      &     '10','11','12','13','14','15','16','17','18','19',
@@ -31,7 +32,7 @@ c      REAL KB_2(9,5,13:59,16)
      &     '90','91','92','93','94','95','96','97','98','99'/
 
       NAMELIST /PAR/ WAVENUMber1,WAVENUMber2,IGAS1_L,IGAS2_L,IGAS1_U,
-     &                   IGAS2_U ,igas_minor_l,igas_minor_u
+     &                   IGAS2_U ,igas_minor_l,igas_minor_u,nmol
 
       read (*,par)
 

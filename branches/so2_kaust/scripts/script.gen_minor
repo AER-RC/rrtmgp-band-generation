@@ -14,7 +14,7 @@ cd $1
 
 ln -s ../TAPE3 .
 ln -s ../PRESSURE.PROFILE .
-ln -s ../lblrtm_v5.21_linux_pgi_sgl lblrtm_f90
+ln -s ../lblrtm_v12.2_linux_pgi_sgl lblrtm_f90
 \rm tape5*minor*
 \rm KG-minor*
 \rm input_minor
@@ -58,7 +58,7 @@ while ($jl < 10)
 	script.mv_files 13 ODint_ ODtmp_
 	if ($i == 3) then
 	    @ k=1
-	    while ($k < 8)
+	    while ($k < 10)
 		if (-e "tape5nc-minor0"$k"-T03") then
 		echo Calculating Minor Gas ${k}
 		@ k1 = 2
@@ -112,7 +112,7 @@ while ($ju < 10)
 	\script.cp_files 47 ODint_ ODtmp_
 	if ($i == 8) then
 	    @ k=1
-	    while ($k < 8)
+	    while ($k < 10)
 		if (-e "tape5nc-minor0"$k"-T08") then
 		echo Calculating Minor Gas ${k}
 		@ k1 = 7

@@ -24,20 +24,21 @@ c     species parameter(eta) with n01 equaling only gas2 present and
 c     n09 equaling only gas1 present (this corresponds to the n09 
 c    for one major gas.
 C***************************************************
+      PARAMETER (MXMOL=9)
       CHARACTER*2 FNUM(99),nnum(9)
       CHARACTER*50 TAPE5
+      CHARACTER*20 rec_2_1_lo,rec_2_1_hi
       PARAMETER (MXL=200)
       PARAMETER (MXREF = 50)
       DIMENSION PRESS(0:MXL),T0(MXL),ALT(0:MXL)
-      DIMENSION ALTREF(MXREF),PREF(MXREF),TREF(MXREF),AMOL1(MXREF)
-      DIMENSION AMOL2(MXREF),AMOL3(MXREF),AMOL4(MXREF),AMOL5(MXREF)
-      DIMENSION AMOL6(MXREF),AMOL7(MXREF),AMOL8(MXREF)
-      DIMENSION RHOTOT(MXL),W(7,mxl),W_orig(7,mxl)
+      DIMENSION ALTREF(MXREF),PREF(MXREF),TREF(MXREF)
+      DIMENSION AMOL(MXMOL,MXREF)
+      DIMENSION RHOTOT(MXL),W(mxmol,mxl),W_orig(mxmol,mxl)
       DIMENSION ETA(9),ICN(2)
       DIMENSION WVN_LCOUPLE(10)
-      integer igas_minor_l(7,1),igas_minor_u(7,1)
+      integer igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,IGAS1_U,
-     &                   IGAS2_U,igas_minor_l,igas_minor_u 
+     &                   IGAS2_U,igas_minor_l,igas_minor_u,nmol 
 
 C     Bolztman's constant is a factor of 1E-3 off to compensate for
 C     the units of pressure.
@@ -71,9 +72,18 @@ c icn(2) => upper atmosphere.
 C     The following data corresponds to an MLS standard atmosphere.
       include 'std_atmos.f'
 
+      DATA rec_2_1_lo /' 1 13 7   1.000000  '/ 
+      DATA rec_2_1_hi /' 1 47 7   1.000000  '/ 
+
 C Read in Namelist that provides the information concerning wavelength and
 C gases for each level.
       READ(*,PAR)
+ 
+C!!!!! For this current SO2 KAUST application we want the mapper to have only the seven original species
+C!!!!! i.,e. the first seven HITRAN species
+      nmol = 7
+      write(rec_2_1_lo(6:9),'i4') nmol
+      write(rec_2_1_hi(6:9),'i4') nmol
 
 C This adjustment is required by LBLRTM to generate the necessary optical depths.
 C Note that when line coupling present, must extend the LBLRTM calculations to
@@ -128,7 +138,7 @@ c therefore provide the pressure layers used in TAPE5.
       IREF = 2
 
 C     Calculate the interpolated values (in pressure) of temperature 
-C     and mixing ratios of species 1-7 corresponding to a MLS standard
+C     and mixing ratios of species 1-nmol corresponding to a MLS standard
 C     atmosphere.
 
       PRESS(0) = 1000.
@@ -144,13 +154,9 @@ C     Don't interpolate if pressure higher than MLS ground pressure.
 C     Instead, take the values for this pressure.
          IF (P .GE. PREF(1)) THEN
             T0(LEV) = TREF(1)
-            W_ORIG(1,LEV) = AMOL1(1) * 1.E-06
-            W_ORIG(2,LEV) = AMOL2(1) * 1.E-06
-            W_ORIG(3,LEV) = AMOL3(1) * 1.E-06
-            W_ORIG(4,LEV) = AMOL4(1) * 1.E-06
-            W_ORIG(5,LEV) = AMOL5(1) * 1.E-06
-            W_ORIG(6,LEV) = AMOL6(1) * 1.E-06
-            W_ORIG(7,LEV) = AMOL7(1) * 1.E-06
+            do im=1,nmol
+               w_orig(im,lev) = amol(im,1)*1.e-6
+            end do
          ELSE
  900        CONTINUE
             IF (P .GE. PREF(IREF)) THEN
@@ -158,27 +164,11 @@ C     Interpolate in ln(pressure).
                FRAC = (ALOG(P)-ALOG(PREF(IREF-1)))/
      &              (ALOG(PREF(IREF))-ALOG(PREF(IREF-1)))
                T0(LEV) = TREF(IREF-1) + FRAC*(TREF(IREF)-TREF(IREF-1))
-               W_ORIG(1,LEV) = AMOL1(IREF-1) + FRAC*
-     &              (AMOL1(IREF)-AMOL1(IREF-1))
-               W_ORIG(1,LEV) = W_ORIG(1,LEV) * 1.E-06
-               W_ORIG(2,LEV) = AMOL2(IREF-1) + FRAC*
-     &              (AMOL2(IREF)-AMOL2(IREF-1))
-               W_ORIG(2,LEV) = W_ORIG(2,LEV) * 1.E-06
-               W_ORIG(3,LEV) = AMOL3(IREF-1) + FRAC*
-     &              (AMOL3(IREF)-AMOL3(IREF-1))
-               W_ORIG(3,LEV) = W_ORIG(3,LEV) * 1.E-06
-               W_ORIG(4,LEV) = AMOL4(IREF-1) + FRAC*
-     &              (AMOL4(IREF)-AMOL4(IREF-1))
-               W_ORIG(4,LEV) = W_ORIG(4,LEV) * 1.E-06
-               W_ORIG(5,LEV) = AMOL5(IREF-1) + FRAC*
-     &              (AMOL5(IREF)-AMOL5(IREF-1))
-               W_ORIG(5,LEV) = W_ORIG(5,LEV) * 1.E-06
-               W_ORIG(6,LEV) = AMOL6(IREF-1) + FRAC*
-     &              (AMOL6(IREF)-AMOL6(IREF-1))
-               W_ORIG(6,LEV) = W_ORIG(6,LEV) * 1.E-06
-               W_ORIG(7,LEV) = AMOL7(IREF-1) + FRAC*
-     &              (AMOL7(IREF)-AMOL7(IREF-1))         
-               W_ORIG(7,LEV) = W_ORIG(7,LEV) * 1.E-06
+               do im=1,nmol
+		  W_ORIG(im,LEV) = AMOL(im,IREF-1) + FRAC*
+     &              (AMOL(im,IREF)-AMOL(im,IREF-1))
+		  W_ORIG(im,LEV) = W_ORIG(im,LEV) * 1.E-06
+               end do
             ELSE
                IREF= IREF + 1
                GO TO 900
@@ -207,26 +197,28 @@ c     with one major gas.
      &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
             WRITE(20,105) XSELF,XFRGN,XCO2C,XO3CN,XO2CN,XN2CN,XRAYL
             WRITE(20,106) WAVENUM1,WAVENUM2,dvout
-            WRITE(20,107) ' 1 13 7   1.000000  ', 
+            WRITE(20,107) rec_2_1_lo, 
      &           'MIDLATITUDE SUMM H1=   0.00 ',
      &           'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
             TEMP = T0(1) + ITEMP*DELTAT
             WATER = W(1,1)*RHOTOT(1)/(1.+W(1,1))
             RHODRY = RHOTOT(1)-WATER
             WRITE(20,9023) PRESS(1),TEMP,IPTHAK
-            BROAD=RHODRY*1.E5*(1-W(2,1)-W(3,1)-W(4,1)-W(5,1)
-     &           -W(6,1)-W(7,1))
-            WRITE(20,9015)W(1,1),W(2,1),W(3,1),W(4,1),
-     &           W(5,1),W(6,1),W(7,1),BROAD
+            BROAD=RHODRY*1.E5*(1-sum(W(2:nmol,1)))
+            WRITE(20,9015)W(1:7,1),BROAD
+            if (nmol.gt.7) then
+	       WRITE(20,9015)W(8:nmol,1)
+            endif
             DO 2000 LEV = 2, LEVDUP
                TEMP = T0(LEV) + ITEMP*DELTAT
                WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
                RHODRY = RHOTOT(LEV)-WATER
                WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
-               BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)-
-     &              W(5,LEV)-W(6,LEV)-W(7,LEV))
-               WRITE(20,9015)W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
-     &              W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+               BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
+	       WRITE(20,9015)W(1:7,LEV),BROAD
+	       if (nmol.gt.7) then
+		  WRITE(20,9015)W(8:nmol,lev)
+	       endif
  2000       CONTINUE
             WRITE(20,109)
             CLOSE(20)
@@ -267,26 +259,28 @@ c               WRITE(20,101)
      &              ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
             WRITE(20,105) XSELF,XFRGN,XCO2C,XO3CN,XO2CN,XN2CN,XRAYL
             WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
-            WRITE(20,107) ' 1 13 7   1.000000  ', 
+            WRITE(20,107) rec_2_1_lo, 
      &              'MIDLATITUDE SUMM H1=   0.00 ',
      &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
                TEMP = T0(1) + ITEMP*DELTAT
                WATER = W(1,1)*RHOTOT(1)/(1.+W(1,1))
                RHODRY = RHOTOT(1)-WATER
                WRITE(20,9023) PRESS(1),TEMP,IPTHAK
-               BROAD=RHODRY*1.E5*(1-W(2,1)-W(3,1)-W(4,1)-W(5,1)
-     &              -W(6,1)-W(7,1))
-               WRITE(20,9015)W(1,1),W(2,1),W(3,1),W(4,1),
-     &              W(5,1),W(6,1),W(7,1),BROAD
+               BROAD=RHODRY*1.E5*(1-sum(W(2:nmol,1)))
+	       WRITE(20,9015)W(1:7,1),BROAD
+	       if (nmol.gt.7) then
+		  WRITE(20,9015)W(8:nmol,1)
+	       endif
                DO 3000 LEV = 2, LEVDUP
                   TEMP = T0(LEV) + ITEMP*DELTAT
                   WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
                   RHODRY = RHOTOT(LEV)-WATER
                   WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
-                  BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)
-     &              -W(5,LEV)-W(6,LEV)-W(7,LEV))
-                  WRITE(20,9015)W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
-     &           W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+                  BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
+		  WRITE(20,9015)W(1:7,LEV),BROAD
+		  if (nmol.gt.7) then
+		     WRITE(20,9015)W(8:nmol,LEV)
+		  endif
  3000          CONTINUE
                WRITE(20,109)
                CLOSE(20)
@@ -314,26 +308,28 @@ c            WRITE(20,101)
      &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
             WRITE(20,105) XSELF,XFRGN,XCO2C,XO3CN,XO2CN,XN2CN,XRAYL
             WRITE(20,106) WAVENUM1,WAVENUM2,dvout
-            WRITE(20,107) ' 1 47 7   1.000000  ', 
+            WRITE(20,107) rec_2_1_hi, 
      &           'MIDLATITUDE SUMM H1=   0.00 ',
      &           'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
             TEMP = T0(LEVDUP) + ITEMP*DELTAT
             WATER = W(1,LEVDUP)*RHOTOT(LEVDUP)/(1.+W(1,LEVDUP))
             RHODRY = RHOTOT(LEVDUP)-WATER
             WRITE(20,9023) PRESS(LEVDUP),TEMP,IPTHAK
-            BROAD = RHODRY*1.E5*(1.-W(2,LEVDUP)-W(3,LEVDUP)-W(4,LEVDUP)
-     &        -W(5,LEVDUP)-W(6,LEVDUP)-W(7,LEVDUP))
-            WRITE(20,9015)W(1,LEVDUP),W(2,LEVDUP),W(3,LEVDUP),
-     &           W(4,LEVDUP),W(5,LEVDUP),W(6,LEVDUP),W(7,LEVDUP),BROAD
+            BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEVDUP)))
+	    WRITE(20,9015)W(1:7,levdup),BROAD
+	    if (nmol.gt.7) then
+	       WRITE(20,9015)W(8:nmol,levdup)
+	    endif
             DO 4000 LEV = LEVDUP+1, NLEV
                TEMP = T0(LEV) + ITEMP*DELTAT
                WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
                RHODRY = RHOTOT(LEV)-WATER
                WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
-               BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)
-     &              -W(5,LEV)-W(6,LEV)-W(7,LEV))
-               WRITE(20,9015)W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
-     &           W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+               BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
+	       WRITE(20,9015)W(1:7,lev),BROAD
+	       if (nmol.gt.7) then
+		  WRITE(20,9015)W(8:nmol,lev)
+	       endif
  4000       CONTINUE
             WRITE(20,109)
             CLOSE(20)
@@ -375,26 +371,28 @@ c               WRITE(20,101)
      &              ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
             WRITE(20,105) XSELF,XFRGN,XCO2C,XO3CN,XO2CN,XN2CN,XRAYL
             WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
-            WRITE(20,107) ' 1 47 7   1.000000  ', 
+            WRITE(20,107) rec_2_1_hi, 
      &              'MIDLATITUDE SUMM H1=   0.00 ',
      &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
                TEMP = T0(LEVDUP) + ITEMP*DELTAT
                WATER = W(1,LEVDUP)*RHOTOT(LEVDUP)/(1.+W(1,LEVDUP))
                RHODRY = RHOTOT(LEVDUP)-WATER
                WRITE(20,9023) PRESS(LEVDUP),TEMP,IPTHAK
-               BROAD = RHODRY*1.E5*(1.-W(2,LEVDUP)-W(3,LEVDUP)
-     &              -W(4,LEVDUP)-W(5,LEVDUP)-W(6,LEVDUP)-W(7,LEVDUP))
-               WRITE(20,9015)W(1,LEVDUP),W(2,LEVDUP),W(3,LEVDUP),
-     &             W(4,LEVDUP),W(5,LEVDUP),W(6,LEVDUP),W(7,LEVDUP),BROAD
+	       BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEVDUP)))
+	       WRITE(20,9015)W(1:7,levdup),BROAD
+	       if (nmol.gt.7) then
+		  WRITE(20,9015)W(8:nmol,levdup)
+	       endif
                DO 5000 LEV = LEVDUP+1, NLEV
                   TEMP = T0(LEV) + ITEMP*DELTAT
                   WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
                   RHODRY = RHOTOT(LEV)-WATER
                   WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
-                  BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)
-     &                 -W(5,LEV)-W(6,LEV)-W(7,LEV))
-                  WRITE(20,9015)W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
-     &                 W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+		  BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
+		  WRITE(20,9015)W(1:7,lev),BROAD
+		  if (nmol.gt.7) then
+		     WRITE(20,9015)W(8:nmol,lev)
+		  endif
  5000          CONTINUE
                WRITE(20,109)
                CLOSE(20)
@@ -402,6 +400,28 @@ c               WRITE(20,101)
  5500 CONTINUE
  5750 CONTINUE
       ENDIF
+
+c Generate data for kdis_sort
+       open(50,file='initial_std')
+       do iii=1,nmol 
+	  write(50,8005) iii
+          do j=1,10,5
+             write(50,8010) w_orig(iii,j:j+4)
+          end do
+	  write(50,8015) w_orig(iii,j:levdup)
+       end do
+
+       nupper = nlev-levdup+1
+       nlines = nupper/5
+       nlong = levdup+nlines*5-1
+       do iii=1,nmol 
+	  write(50,8020) iii
+          do j=levdup,nlong,5
+             write(50,8010) w_orig(iii,j:j+4)
+          end do
+	  write(50,8025) w_orig(iii,j:nlev)
+       end do
+       close(50)
 
  100  FORMAT('TAPE5 FOR MLS')
  101  FORMAT(A40,A40)

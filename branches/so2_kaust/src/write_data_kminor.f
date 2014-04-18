@@ -1,8 +1,10 @@
        PROGRAM WRITE_DATA_KMINOR
       
+      PARAMETER (MXMOL=9)
       CHARACTER*2 FNUM(99)
       CHARACTER*50 KG
       character*20 kgfile1,kgfile2
+    
 
 C     KA is filled with absorption coefficients (x 1.e20) for the
 C     lower atmosphere.  It should be dimensioned # of species levels X
@@ -15,10 +17,10 @@ c      REAL KA_1(5,13,16)
 c      REAL KB_1(5,13:59,16)
 c      REAL KA_2(9,5,13,16)
 c      REAL KB_2(9,5,13:59,16)
-      REAL KA_MINOR_1(7,2,16),KA_MINOR_2(7,9,2,16)
-      REAL KB_MINOR_1(7,2,16),KB_MINOR_2(7,5,2,16)
+      REAL KA_MINOR_1(mxmol,2,16),KA_MINOR_2(mxmol,9,2,16)
+      REAL KB_MINOR_1(mxmol,2,16),KB_MINOR_2(mxmol,5,2,16)
 
-      integer igas_minor_l(7,1),igas_minor_u(7,1)
+      integer igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
 
       DATA FNUM/'01','02','03','04','05','06','07','08','09',
      &     '10','11','12','13','14','15','16','17','18','19',
@@ -32,18 +34,18 @@ c      REAL KB_2(9,5,13:59,16)
      &     '90','91','92','93','94','95','96','97','98','99'/
 
       NAMELIST /PAR/ WAVENUMber1,WAVENUMber2,IGAS1_L,IGAS2_L,IGAS1_U,
-     &                   IGAS2_U ,igas_minor_l,igas_minor_u
+     &                   IGAS2_U ,igas_minor_l,igas_minor_u,nmol
 
       read (*,par)
 
       OPEN(20,FILE='kg_minor.f',FORM='FORMATTED')
 
-      write(20,8000)
+      write(20,8000) nmol
       write(20,8001)
       write(20,8002) 
       write(20,8003)
 
-      do 500 ii=1,7
+      do 500 ii=1,nmol
          if (igas_minor_l(ii,1) .ne. 0) then
             if (igas2_l .eq. 0) then 
                   KGfile1 = 'KG-minor'//fnum(ii)//'-T02-n09'
@@ -95,7 +97,7 @@ c      REAL KB_2(9,5,13:59,16)
         endif
  500   continue
 
-      do 800 ii=1,7
+      do 800 ii=1,nmol
          if (igas_minor_u(ii,1) .ne. 0) then
             if (igas2_u .eq. 0) then
                   KGfile1 = 'KG-minor'//fnum(ii)//'-T07-n09'
@@ -149,7 +151,7 @@ c      REAL KB_2(9,5,13:59,16)
         endif
  800   continue
 
- 8000 FORMAT('       PARAMETER (MG=16,NMINOR=7)')
+ 8000 FORMAT('       PARAMETER (MG=16,NMINOR=',i2,')')
  8001 FORMAT('       REAL KA_MINOR_1(NMINOR,2,MG),'/
      &     '     &      KA_MINOR_2(NMINOR,9,2,MG)')
  8002 FORMAT('       REAL KB_MINOR_1(NMINOR,2,MG),'/

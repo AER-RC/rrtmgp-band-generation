@@ -19,7 +19,6 @@ c      REAL KB_2(9,5,13:59,16)
       REAL FORREF(4,mg)
       REAL S296(mg),s260(mg)
 
-      integer igas_minor_l(7,1),igas_minor_u(7,1)
 
       DATA FNUM/'01','02','03','04','05','06','07','08','09',
      &     '10','11','12','13','14','15','16','17','18','19',
@@ -32,10 +31,6 @@ c      REAL KB_2(9,5,13:59,16)
      &     '80','81','82','83','84','85','86','87','88','89',
      &     '90','91','92','93','94','95','96','97','98','99'/
 
-c      NAMELIST /PAR/ WAVENUMber1,WAVENUMber2,IGAS1_L,IGAS2_L,IGAS1_U,
-c     &                   IGAS2_U ,igas_minor_l,igas_minor_u
-
-c      read (*,par)
 
       OPEN(20,FILE='kg_cont.f',FORM='FORMATTED')
 
