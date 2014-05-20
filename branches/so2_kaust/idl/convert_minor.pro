@@ -9,11 +9,11 @@ mo3_b_1 = fltarr(neta[1],16)
 mo3_b_2 = fltarr(neta[1],16)
 
 ; Set temperature profile used in calculations (MLS)
-arr = read_file_str ('/project/p1905/band_build_tst/TAPE6.tropo.short',1)
+arr = read_file_str ('/project/p1905/band_build/TAPE6.tropo.short',1)
 temp_a = float(arr[*,7])
 
 ; Last trop level and first strat level are the same; throw out first strat level
-arr = read_file_str ('/project/p1905/band_build_tst/TAPE6.strat.short',2)
+arr = read_file_str ('/project/p1905/band_build/TAPE6.strat.short',2)
 temp_b = float(arr[*,7])
 tlev_arr = [temp_a,temp_b]
 
