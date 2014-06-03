@@ -1,0 +1,17 @@
+#!/bin/tcsh
+
+\rm TAPE5
+\rm TAPE6
+\rm TAPE9
+\rm TAPE10
+\rm TAPE11
+\rm TAPE12
+\rm TAPE13
+\rm TAPE61
+\rm TAPE62
+\rm TAPE63
+\rm TAPE31
+\rm TAPE32
+\rm TAPE33
+\rm OD*
+\rm RADINIT

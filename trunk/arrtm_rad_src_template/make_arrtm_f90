@@ -1,0 +1,18 @@
+EXECNAME = arrtm_rad
+
+# All the FORTRAN files
+
+OBJS  = arrtm.o  rrtatm.o  asetcoef.o  artr.o \
+	artreg.o  k_g.o  ataumol.o  extra.o \
+	util_sgi.o  rtrcld.o  cldprop.o \
+	rtregcld.o 
+
+
+$(EXECNAME) : $(OBJS)
+	f90 -o $(EXECNAME) $(OBJS)
+
+$(OBJS): %.o: %.f
+	f90 -c $< -o $@
+
+asetcoef.o : avplank_01.f
+k_g.o : kg_planck.f k_gB01.f kg_minor.f kg_cont.f

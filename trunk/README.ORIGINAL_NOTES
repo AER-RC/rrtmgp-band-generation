@@ -1,0 +1,8 @@
+April 13, 2014
+
+* New repo: https://svn.aer.com/svn/aer/project/RD/RRTM_BAND_GEN
+* Will contain development for new RRTM.
+
+History of RRTM
+* Create https://svn.aer.com/svn/aer/project/RD/RRTM_BAND_GEN/branches/rrtm_lw-v3.0
+* Jen and Karen are attempting to clean up the original RRTM directories.  We are creating a branch in the repo containing shell scripts, .f files, etc.  These were copied from /storm/rc3/jdelamer/flrt_jen/working_model/central_exec_scripts.  The scripts archived in this branch were (likely) to have generated the k's that are contained in the August 2002 RRTM_LW 3.0 release.
