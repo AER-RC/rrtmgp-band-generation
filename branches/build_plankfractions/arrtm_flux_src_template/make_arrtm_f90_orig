@@ -1,0 +1,78 @@
+arrtm : arrtm.o rrtatm.o asetcoef.o artr.o artreg.o k_g.o ataumol.o extra.o\
+util_sgi.o rtrcld.o cldprop.o rtregcld.o
+	f90  -o  arrtm  arrtm.o rrtatm.o asetcoef.o artr.o \
+  artreg.o k_g.o ataumol.o extra.o util_sgi.o rtrcld.o cldprop.o rtregcld.o
+#
+arrtm.o: arrtm.f
+	f90        -c  arrtm.f
+#
+rrtatm.o: rrtatm.f
+	f90       -c  rrtatm.f
+#
+asetcoef.o: asetcoef.f
+	f90       -c  asetcoef.f 
+#
+artr.o: artr.f
+	f90          -c artr.f
+#
+artreg.o: artreg.f
+	f90          -c  artreg.f
+#
+ataumol.o: ataumol.f
+	f90     -c  ataumol.f
+#
+k_g.o: k_g.f
+	f90     -c  k_g.f
+#
+extra.o: extra.f
+	f90     -c  extra.f
+#
+util_sgi.o: util_sgi.f
+	f90     -c  util_sgi.f
+#
+rtrcld.o: rtrcld.f
+	f90     -c  rtrcld.f
+#
+cldprop.o: cldprop.f
+	f90     -c cldprop.f
+#
+rtregcld.o: rtregcld.f
+	f90     -c  rtregcld.f
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,116 @@
+#!/bin/csh -f
+
+\cp input_param input_param_$2
+\cp input_param_$2 $1/input_param_$2
+\cp input_param $1/input_param
+\cp input_param $1/arrtm_rad_src/.
+cd $1
+
+ln -s ../lbl_f90/TAPE3 .
+
+#Generate TAPE5s for self-continuum
+
+if ( -e "tape5-T03-n01") then
+    @ jl=5
+else
+    @ jl=9	
+endif
+@ i = 3
+set tape5od = tape5-T0${i}-n0${jl} 
+\cp ${tape5od} TAPE5
+lblrtm_f90
+set kgfile = KG_bbp1
+echo " &igaspar igas_on=1/" > tmp
+cat input_param tmp > input_param_planck
+kdis_2sort_planckfilter < input_param_planck 
+\mv -f CK_ABS_PL.DAT ${kgfile}		
+\rm tmp
+\rm input_param_planck
+
+if ( -e "tape5-T08-n01") then
+    @ ju=5
+else
+    @ ju=9
+endif
+@ i=8
+set tape5od = tape5-T0${i}-n0${ju} 
+\cp ${tape5od} TAPE5
+lblrtm_f90
+set kgfile = KG_bbp2
+echo " &igaspar igas_on=2/" > tmp
+cat input_param tmp > input_param_planck
+kdis_2sort_planckfilter < input_param_planck 
+\mv -f CK_ABS_PL.DAT ${kgfile}		
+\rm tmp 
+\rm input_param_planck
+
+write_data_planck
+
+\cp kg_planck.f kg_planck_$2.f
+\cp kg_planck.f arrtm_rad_src/.
+
+#Generate the necessary Planck information to be used as
+#input to ARRTM. This information is compiled into a file
+#called block_planck which is then transfered into ARRTM
+#program ASETCOEF.F
+
+echo 'Generating Planck functions for band'
+comp_wtavg_planck
+\cp avplank_01.f av_plank_01_$2.f
+\cp avplank_01.f arrtm_rad_src/.
+
+#Remove all excess files from the band directory before
+#leaving it.
+\rm OD*
+\rm NC*
+\rm TAPE3
+\rm TAPE9
+\rm TAPE10
+\rm TAPE11
+\rm TAPE12
+
+#Now go to the ARRTM directory and run the code to
+#calculate the fluxes in your band.
+
+cd arrtm_rad_src/
+
+\rm k_g.o
+\rm asetcoef.o
+
+echo 'Compiling new ARRTM source code'
+make -f make_arrtm_f90
+echo 'Running ARRTM for MLS'
+cd ..
+\rm arrtm_rad
+cp -p arrtm_rad_src/arrtm_rad .
+\cp INPUT_RRTM_MLS INPUT_RRTM
+
+arrtm_rad < input_param 
+
+#After generating the information for your band, copy it
+#to the band directory for safekeeping.
+\cp OUTPUT_RRTM_RADIANCE ../$1/OUTPUT_ARRTM_MLS_$2
+
+#SAW comparison
+\cp INPUT_RRTM_SAW INPUT_RRTM
+arrtm_rad < input_param
+\cp OUTPUT_RRTM_RADIANCE ../$1/OUTPUT_ARRTM_SAW_$2
+
+#TRP comparison
+\cp INPUT_RRTM_TRP INPUT_RRTM
+arrtm_rad < input_param
+\cp OUTPUT_RRTM_RADIANCE ../$1/OUTPUT_ARRTM_TRP_$2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
