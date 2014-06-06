@@ -18,7 +18,8 @@ OBJ2 = \
 
 OBJ3 = \
 	write_data_multiple \
-	write_data_multiple_csh
+	write_data_multiple_csh \
+        write_data_eta
 
 all: makedir	$(OBJ1) $(OBJ2) $(OBJ3)  conclude
 
