@@ -15,12 +15,12 @@ echo Create Directory: $1
 if ($2 == "reg") then 
   set wtape = "write_tape5"
   set wtapenc = "write_tape5_nc"
-  set wmult = "write_tape5_multiple"
+  set wmult = "write_data_multiple"
   set jlmax = "09"
 else
   set wtape = "write_tape5_csh"
   set wtapenc = "write_tape5_nc_csh"
-  set wmult = "write_tape5_multiple_csh"
+  set wmult = "write_data_multiple_csh"
   set jlmax = "101"
 endif
 
