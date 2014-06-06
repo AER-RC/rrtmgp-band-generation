@@ -332,7 +332,7 @@ c     with one major gas.
             WATER = W(1,1)*RHOTOT(1)/(1.+W(1,1))
             RHODRY = RHOTOT(1)-WATER
             WRITE(20,9023) PRESS(1),TEMP,IPTHAK
-            BROAD=RHODRY*1.E5*(1-W(2,1)-W(3,1)-W(4,1)-W(5,1)
+            BROAD=RHODRY*1.E5*(1.-W(2,1)-W(3,1)-W(4,1)-W(5,1)
      &           -W(6,1)-W(7,1))
             WRITE(20,9015)W(1,1),W(2,1),W(3,1),W(4,1),
      &           W(5,1),W(6,1),W(7,1),BROAD
