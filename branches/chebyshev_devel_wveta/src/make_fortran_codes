@@ -1,0 +1,39 @@
+#
+
+OBJPATH = ../objdir
+
+SRCPATH = .
+
+VPATH = $(SRCPATH): $(OBJPATH)
+
+OBJ1 = \
+	kdis_2sort_l 
+
+OBJ2 = \
+	write_tape5 \
+	write_tape5_nc \
+	write_tape5_csh \
+	write_tape5_nc_csh \
+
+
+OBJ3 = \
+	write_data_multiple \
+	write_data_multiple_csh \
+        write_data_eta
+
+all: makedir	$(OBJ1) $(OBJ2) $(OBJ3)  conclude
+
+% :%.f
+	pgf90  $< -o $(OBJPATH)/$@
+
+
+.SILENT:
+
+makedir :
+	if [ ! -d $(OBJPATH) ] ; \
+	then \
+	mkdir $(OBJPATH) ; \
+	fi
+
+conclude:
+	rm *.o
