@@ -11,9 +11,13 @@ OBJ1 = \
 
 OBJ2 = \
 	write_tape5 \
+	write_tape5_sat \
 	write_tape5_nc \
+	write_tape5_nc_sat \
 	write_tape5_csh \
+	write_tape5_csh_sat \
 	write_tape5_nc_csh \
+	write_tape5_nc_csh_sat 
 
 
 OBJ3 = \
