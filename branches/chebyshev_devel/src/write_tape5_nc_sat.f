@@ -1,4 +1,5 @@
-      PROGRAM WRITE_TAPE5
+      PROGRAM WRITE_TAPE5_NC
+
 C***************************************************
 cProgram version created by: Jennifer Delamere January, 1999
 c
@@ -8,15 +9,17 @@ cInput: Namelist which includes beginning wavenumber,
 c     ending wavenumber and the gases to be included.
 c      
 cOutput: Tape 5's for generating the absorption coefficients
-c     which include ALL 7 major MLS gases AND all continua.
+c     which include ONLY the major gases included in the k's
+c     AND which includes the continuum contribution for gases
+c     EXCEPT water vapor (which will be included separately).
 c
 cNaming Convention:
-c     One major gas: 'tape5-Txx-n09' where the xx [01,..,05] 
+c     One major gas: 'tape5nc-Txx-n09' where the xx [01,..,05] 
 c     indicates the lower atmosphere and 5 reference temperature
 c     levels and xx [06,..,10] indicates upper atmosphere and 5
 c     reference temperature levels.      
 c
-c     Two major gas: 'tape5-Txx-n'nnum'' where the xx [01,..,05] 
+c     Two major gas: 'tape5nc-Txx-n'nnum'' where the xx [01,..,05] 
 c     indicates the lower atmosphere and 5 reference temperature
 c     levels and xx [06,..,10] indicates upper atmosphere and 5
 c     reference temperature levels.  'nnum' indicates the binary    
@@ -24,6 +27,7 @@ c     species parameter(eta) with n01 equaling only gas2 present and
 c     n09 equaling only gas1 present (this corresponds to the n09 
 c    for one major gas.
 C***************************************************
+
       CHARACTER*2 FNUM(99),nnum(9)
       CHARACTER*50 TAPE5
       PARAMETER (MXL=200)
@@ -34,22 +38,19 @@ C***************************************************
       DIMENSION AMOL6(MXREF),AMOL7(MXREF),AMOL8(MXREF)
       DIMENSION RHOTOT(MXL),W(7,mxl),W_orig(7,mxl)
       DIMENSION WS(2,MXL,5,9)
-      DIMENSION WSAT
-      DIMENSION RHOAIR
-
       INTEGER ISAT(MXL,5)
       DIMENSION ETA(9),ICN(2)
       DIMENSION WVN_LCOUPLE(10)
       integer igas_minor_l(7,1),igas_minor_u(7,1)
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,IGAS1_U,
-     &                   IGAS2_U,igas_minor_l,igas_minor_u 
+     &                   IGAS2_U ,igas_minor_l,igas_minor_u
 
 C     Bolztman's constant is a factor of 1E-3 off to compensate for
 C     the units of pressure.
       
       DATA BOLTZ /1.38044E-19 /
       DATA AVOGAD / 6.022045E+23 /
-      Data WTWAT /18.015/
+      DATA WTWAT /18.015/
       DATA  TZERO / 273.15 /                           
       DATA  PZERO / 1013.25 /
       DATA RHOFAC /1.0006/
@@ -74,9 +75,8 @@ C     the units of pressure.
      &     '90','91','92','93','94','95','96','97','98','99'/
 c Define the continuum to be ON where icn(1) => lower atmosphere and 
 c icn(2) => upper atmosphere.
-      DATA ICN /6,6/
+      DATA icn /6,6/
 
-C     The following data corresponds to an MLS standard atmosphere.
       include 'std_atmos.f'
 
 C Useful functions
@@ -93,10 +93,8 @@ C gases for each level.
 C This adjustment is required by LBLRTM to generate the necessary optical depths.
 C Note that when line coupling present, must extend the LBLRTM calculations to
 C outside the boundary of this region.
-
-      WAVENUM1 = WAVENUMBER1 - 5.0
-      WAVENUM2 = WAVENUMBER2 + 5.0
-
+      WAVENUM1=WAVENUMBER1-5.0
+      WAVENUM2=WAVENUMBER2+5.0
       DO 500 IWVN=1,10,2
          IF (WAVENUM1 .GE. WVN_LCOUPLE(IWVN) .AND.
      &        WAVENUM1 .LE. WVN_LCOUPLE(IWVN+1)) THEN
@@ -110,16 +108,6 @@ C outside the boundary of this region.
          ENDIF
  510  CONTINUE
 
-C Determine values for continuum scale factor.  For the mapper run, want all
-C scale factors set to 1.0
-
-      XSELF = 1.0
-      XFRGN = 1.0
-      XCO2C = 1.0
-      XO3CN = 1.0
-      XO2CN = 1.0
-      XN2CN = 1.0
-      XRAYL = 0.0
 
 C Temporary solution for setting up number of points going into the calculation of k.
       DVOUT = 3.0e-5
@@ -203,12 +191,82 @@ C     Interpolate in ln(pressure).
  1000 CONTINUE
       CLOSE(10)
 
-C  TWO MAJOR GASES, LOWER ATMOSPHERE : Write tape5's for situation 
-c     with two major gases. 
-c JSD
-        OPEN(25,FILE='RHCALCS.txt',FORM='FORMATTED')
-        WRITE(25,*) 'ETA,P,T,DENNUM/DENSAT'         
 
+C NO MAJOR GASES IN THE LOWER ATMOSPHERE
+
+      IF (IGAS1_L .EQ. 0 .AND. IGAS2_L .EQ. 0) GOTO 3900
+
+C  ONE MAJOR GAS, LOWER ATMOSPHERE : Write tape5's for situation 
+c     with one major gas.  Value of all gases EXCEPT the major gas are set to 0.0.
+      IF (IGAS2_L. EQ. 0) THEN 
+
+C Determine values for continuum scale factor.  For the mappee run, want all
+C scale factors set to 0.0 EXCEPT that of the mappee. Water vapor as the
+C mappee is always set to 0.0
+
+         XSELFL = 0.0
+         XFRGNL = 0.0
+         XCO2CL = 0.0
+         XO3CNL = 0.0
+         XO2CNL = 0.0
+         XN2CNL = 0.0
+         XRAYLL = 0.0
+
+         IF (IGAS1_L .EQ. 2 ) XCO2CL = 1.0
+         IF (IGAS1_L .EQ. 3 ) XO3CNL = 1.0
+         IF (IGAS1_L .EQ. 7 ) XO2CNL = 1.0
+
+         W = 0.0
+         W(IGAS1_L,:) = W_ORIG(IGAS1_L,:)
+         INDEX=1
+         DO 2500 ITEMP = -2, 2
+            ITP = ITEMP+3
+            TAPE5 = 'tape5nc-T'//FNUM(INDEX)//'-n09'
+            OPEN(20,FILE=TAPE5,FORM='FORMATTED')
+            WRITE(20,100)
+            WRITE(20,101) '1        2         3         4         5',
+     &           '         6         7         8         9'
+            WRITE(20,102) '123456789-123456789-123456789-123456789-',
+     &           '123456789-123456789-123456789-123456789-'
+            WRITE(20,103)
+            WRITE(20,104) ' HI=1 F4=1 CN=',ICN(1),
+     &           ' AE=0 EM=0 SC=0 FI=0',
+     &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
+            WRITE(20,105) XSELFL,XFRGNL,XCO2CL,XO3CNL,XO2CNL,XN2CNL,XRAYLL
+            WRITE(20,106) WAVENUM1,WAVENUM2,dvout
+            WRITE(20,107) ' 1 13 7   1.000000  ', 
+     &           'MIDLATITUDE SUMM H1=   0.00 ',
+     &           'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
+            TEMP = T0(1) + ITEMP*DELTAT
+            WATER = W(1,1)*RHOTOT(1)/(1.+W(1,1))
+            RHODRY = RHOTOT(1)-WATER
+            WRITE(20,9023) PRESS(1),TEMP,IPTHAK
+            BROAD=RHODRY*1.E5*(1-W(2,1)-W(3,1)-W(4,1)-W(5,1)-
+     &           W(6,1)-W(7,1))
+            WRITE(20,9015)W(1,1),W(2,1),W(3,1),W(4,1),
+     &           W(5,1),W(6,1),W(7,1),BROAD
+            DO 2000 LEV = 2, LEVDUP
+               TEMP = T0(LEV) + ITEMP*DELTAT
+               WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
+               RHODRY = RHOTOT(LEV)-WATER
+               WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
+               BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)
+     &              -W(5,LEV)-W(6,LEV)-W(7,LEV))
+               WRITE(20,9015) W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
+     &           W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+ 2000       CONTINUE
+            WRITE(20,109)
+            CLOSE(20)
+            INDEX = INDEX + 1
+ 2500 CONTINUE
+
+C  TWO MAJOR GASES, LOWER ATMOSPHERE : Write tape5's for situation 
+c     with two major gases.  Value of all gases EXCEPT the major gas are set to 0.0.
+c JSD
+      ELSE IF (IGAS2_L .NE. 0) THEN 
+        OPEN(25,FILE='RHCALCS-nc.txt',FORM='FORMATTED')
+        WRITE(25,*) 'ETA,P,T,DENNUM/DENSAT'
+         
         DO 3600 IP=1,13
           WETA = W_ORIG(1,IP)*
      &     0.99/(1.0 - 0.99)
@@ -219,22 +277,22 @@ C Compute eta = 1 case as it doesn't depend on temperature
 
           DO 3605 ITEMP = -2,2
 C Set up the temperature structure
-            ITP = ITEMP+3             
+            ITP = ITEMP+3
             TEMP = T0(IP)+ITEMP*DELTAT
 
 C Compute the saturation density
             TFRAC = TZERO/TEMP
-            PFRAC = PRESS(IP)/PZERO               
+            PFRAC = PRESS(IP)/PZERO
             DENSAT = SATDEN(TFRAC)
             DENSATOVER = 1.05*SATDEN(TFRAC)
             RHOAIR = ALOSMT*PFRAC*TFRAC
-             
+
 C Calculate the MR of 1.05 the saturation value.
             WSAT = DENTOVMR(DENSAT,RHOAIR)
             WSATOVER = DENTOVMR(DENSATOVER,RHOAIR)
 
 C Compute eta = 2,8 case
-            DO 3610 IA = 2,8 
+            DO 3610 IA = 2,8
              WS(1,IP,ITP,IA) = W_ORIG(1,IP)*
      &         ETA(IA)/(1. - ETA(IA))
              WTMP = WS(1,IP,ITP,IA)
@@ -258,10 +316,10 @@ C Compute eta = 2,8 case
              WRITE(25,*) 'CALCETA',etacalc
              ELSE
                WS(2,IP,ITP,IA) = W_ORIG(2,IP)
-             ENDIF            
+             ENDIF
  3610        CONTINUE
 
-c Handle eta = 9 case            
+c Handle eta = 9 case
            WS(2,IP,ITP,9) = 0.
            DENETA = VMRTODEN(WETA,RHOAIR)
            DENRAT = DENETA/DENSAT
@@ -275,14 +333,191 @@ c Handle eta = 9 case
            WRITE(25,*) ETA(9),PRESS(IP),TEMP,
      &       DENRAT
  3605      CONTINUE
- 3600    CONTINUE         
+ 3600    CONTINUE
 
          DO 3750 IETA = 1,9
             INDEX = 1
             INDEX2 = IETA
+C Determine values for continuum scale factor.  For the mappee run, want all
+C scale factors set to 0.0 EXCEPT that of the mappee. Water vapor as the
+C mappee is always set to 0.0
+
+            XSELFL = 0.0
+            XFRGNL = 0.0
+            XCO2CL = 0.0
+            XO3CNL = 0.0
+            XO2CNL = 0.0
+            XN2CNL = 0.0
+            XRAYLL = 0.0
+
+            W=0.0
+            IF (IETA .EQ. 1) THEN
+c               W(IGAS1_L,:) = 0.0
+c               W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
+               IF (IGAS2_L .EQ. 2) XCO2CL = 1.0
+               IF (IGAS2_L .EQ. 3) XO3CNL = 1.0
+               IF (IGAS2_L .EQ. 7) XO2CNL = 1.0
+            ELSE
+               IF (IETA .EQ. 9) THEN      
+c                  W(IGAS1_L,:) = W_ORIG(IGAS1_L,:)
+c                  W(IGAS2_L,:) = 0.0
+                  IF (IGAS1_L .EQ. 2) XCO2CL = 1.0
+                  IF (IGAS1_L .EQ. 3) XO3CNL = 1.0
+                  IF (IGAS1_L .EQ. 7) XO2CNL = 1.0
+               ELSE
+                  IF (IGAS1_L .EQ. 2 .OR. IGAS2_L .EQ. 2) XCO2CL = 1.0
+                  IF (IGAS1_L .EQ. 3 .OR. IGAS2_L .EQ. 3) XO3CNL = 1.0
+                  IF (IGAS1_L .EQ. 7 .OR. IGAS2_L .EQ. 7) XO2CNL = 1.0
+c                  W(IGAS1_L,:) = W_ORIG(IGAS1_L,:)*
+c     &                 ETA(IETA)/(1. - ETA(IETA))
+c                  W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
+               ENDIF
+            ENDIF
             DO 3500 ITEMP = -2, 2
-              ITP = ITEMP+3
-               TAPE5 = 'tape5-T'//FNUM(INDEX)//'-n'//NNUM(INDEX2)
+               ITP = ITEMP+3
+               TAPE5 = 'tape5nc-T'//FNUM(INDEX)//'-n'//NNUM(INDEX2)
+               OPEN(20,FILE=TAPE5,FORM='FORMATTED')
+               WRITE(20,100)
+            WRITE(20,101) '1        2         3         4         5',
+     &           '         6         7         8         9'
+            WRITE(20,102) '123456789-123456789-123456789-123456789-',
+     &           '123456789-123456789-123456789-123456789-'
+            WRITE(20,103)
+            WRITE(20,104) ' HI=1 F4=1 CN=',ICN(1),
+     &           ' AE=0 EM=0 SC=0 FI=0',
+     &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
+            WRITE(20,105) XSELFL,XFRGNL,XCO2CL,XO3CNL,XO2CNL,XN2CNL,XRAYLL
+            WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
+            WRITE(20,107) ' 1 13 7   1.000000  ', 
+     &              'MIDLATITUDE SUMM H1=   0.00 ',
+     &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
+
+            DO 3000 LEV = 1, LEVDUP
+                TEMP = T0(LEV) + ITEMP*DELTAT
+                WATER = WS(1,LEV,ITP,IETA)*RHOTOT(LEV)/
+     &            (1.+WS(1,LEV,ITP,IETA))
+                RHODRY = RHOTOT(LEV)-WATER
+                BROAD = RHODRY*1.E5*(1.-WS(2,LEV,ITP,IETA))
+                IF (LEV .EQ. 1) THEN
+                  WRITE(20,9023) PRESS(1),TEMP,IPTHAK
+                ELSE
+                  WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
+                ENDIF
+                WRITE(20,9015)
+     &             WS(1,LEV,ITP,IETA),
+     &             WS(2,LEV,ITP,IETA),
+     &              0.0, 0.0, 0.0, 0.0, 
+     &              0.0,BROAD
+ 3000          CONTINUE
+              WRITE(20,109)
+               CLOSE(20)
+               INDEX = INDEX + 1
+ 3500       CONTINUE
+ 3750    CONTINUE
+      ENDIF
+
+ 3900 CONTINUE
+
+C NO MAJOR GASES IN THE LOWER ATMOSPHERE
+      IF (IGAS1_U .EQ. 0 .AND. IGAS2_U .EQ. 0) GOTO 5900
+
+C  ONE MAJOR GAS, UPPER ATMOSPHERE : Write tape5's for situation 
+c     with one major gas.  Value of all gases EXCEPT the major gas are set to 0.0.
+      IF (IGAS2_U .EQ. 0  .and. igas1_u .ne. 0) THEN
+         XSELFU = 0.0
+         XFRGNU = 0.0
+         XCO2CU = 0.0
+         XO3CNU = 0.0
+         XO2CNU = 0.0
+         XN2CNU = 0.0
+         XRAYLU = 0.0
+
+         IF (IGAS1_U .EQ. 2) XCO2CU = 1.0
+         IF (IGAS1_U .EQ. 3) XO3CNU = 1.0
+         IF (IGAS1_U .EQ. 7) XO2CNU = 1.0
+
+         W = 0.0
+         W(IGAS1_U,:) = W_ORIG(IGAS1_U,:)
+         DO 4500 ITEMP = -2, 2
+            TAPE5 = 'tape5nc-T'//FNUM(INDEX)//'-n09'
+            OPEN(20,FILE=TAPE5,FORM='FORMATTED')
+            WRITE(20,100)
+            WRITE(20,101) '1        2         3         4         5',
+     &           '         6         7         8         9'
+c            WRITE(20,101)
+            WRITE(20,102) '123456789-123456789-123456789-123456789-',
+     &           '123456789-123456789-123456789-123456789-'
+            WRITE(20,103)
+            WRITE(20,104) ' HI=1 F4=1 CN=',ICN(2),
+     &           ' AE=0 EM=0 SC=0 FI=0',
+     &           ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
+            WRITE(20,105) XSELFU,XFRGNU,XCO2CU,XO3CNU,XO2CNU,XN2CNU,XRAYLU
+            WRITE(20,106) WAVENUM1,WAVENUM2,dvout
+            WRITE(20,107) ' 1 47 7   1.000000  ', 
+     &           'MIDLATITUDE SUMM H1=   0.00 ',
+     &           'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
+            TEMP = T0(LEVDUP) + ITEMP*DELTAT
+            WATER = W(1,LEVDUP)*RHOTOT(LEVDUP)/(1.+W(1,LEVDUP))
+            RHODRY = RHOTOT(LEVDUP)-WATER
+            WRITE(20,9023) PRESS(LEVDUP),TEMP,IPTHAK
+            BROAD = RHODRY*1.E5*(1.-W(2,LEVDUP)-W(3,LEVDUP)-W(4,LEVDUP)
+     &           -W(5,LEVDUP)-W(6,LEVDUP)-W(7,LEVDUP))
+            WRITE(20,9015)W(1,LEVDUP),W(2,LEVDUP),W(3,LEVDUP),
+     &           W(4,LEVDUP),W(5,LEVDUP),W(6,LEVDUP),W(7,LEVDUP),BROAD
+            DO 4000 LEV = LEVDUP+1, NLEV
+               TEMP = T0(LEV) + ITEMP*DELTAT
+               WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
+               RHODRY = RHOTOT(LEV)-WATER
+               WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
+               BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)
+     &              -W(5,LEV)-W(6,LEV)-W(7,LEV))
+               WRITE(20,9015)W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
+     &              W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+ 4000       CONTINUE
+            WRITE(20,109)
+            CLOSE(20)
+            INDEX = INDEX + 1
+ 4500 CONTINUE
+
+C     TWO MAJOR GASES, UPPER ATMOSPHERE : Write tape5's for situation 
+c     with two major gases.  Value of all gases EXCEPT the major gas are set to 0.0.
+      ELSE IF (IGAS2_U .NE. 0) THEN
+         DO 5750 IETA=1,9,2
+            XSELFU = 0.0
+            XFRGNU = 0.0
+            XCO2CU = 0.0
+            XO3CNU = 0.0
+            XO2CNU = 0.0
+            XN2CNU = 0.0
+            XRAYLU = 0.0
+
+            W=0.0
+            IF (IETA .EQ. 1) THEN
+               W(IGAS1_U,:) = 0.0
+               W(IGAS2_U,:) = W_ORIG(IGAS2_U,:)
+               IF (IGAS2_U .EQ. 2) XCO2CU = 1.0
+               IF (IGAS2_U .EQ. 3) XO3CNU = 1.0
+               IF (IGAS2_U .EQ. 7) XO2CNU = 1.0
+            ELSE
+               IF (IETA .EQ. 9) THEN      
+                  W(IGAS1_U,:) = W_ORIG(IGAS1_U,:)
+                  W(IGAS2_U,:) = 0.0
+                  IF (IGAS1_U .EQ. 2 ) XCO2CU = 1.0
+                  IF (IGAS1_U .EQ. 3 ) XO3CNU = 1.0
+                  IF (IGAS1_U .EQ. 7 ) XO2CNU = 1.0
+               ELSE
+                  W(IGAS1_U,:) = W_ORIG(IGAS1_U,:)
+     &                 *ETA(IETA)/(1. - ETA(IETA))
+                  W(IGAS2_U,:) = W_ORIG(IGAS2_U,:)
+                  IF (IGAS1_U .EQ. 2 .OR. IGAS2_U .EQ. 2) XCO2CU = 1.0
+                  IF (IGAS1_U .EQ. 3 .OR. IGAS2_U .EQ. 3) XO3CNU = 1.0
+                  IF (IGAS1_U .EQ. 7 .OR. IGAS2_U .EQ. 7) XO2CNU = 1.0
+               ENDIF
+            ENDIF
+            INDEX = 6
+            INDEX2 = IETA
+            DO 5500 ITEMP = -2, 2
+               TAPE5 = 'tape5nc-T'//FNUM(INDEX)//'-n'//nnum(index2)
                OPEN(20,FILE=TAPE5,FORM='FORMATTED')
                WRITE(20,100)
             WRITE(20,101) '1        2         3         4         5',
@@ -290,43 +525,42 @@ c Handle eta = 9 case
             WRITE(20,102) '123456789-123456789-123456789-123456789-',
      &           '123456789-123456789-123456789-123456789-'
                WRITE(20,103)
-            WRITE(20,104) ' HI=1 F4=1 CN=',ICN(1),
+            WRITE(20,104) ' HI=1 F4=1 CN=',ICN(2),
      &              ' AE=0 EM=0 SC=0 FI=0',
      &              ' PL=0 TS=0 AM=0 MG=1 LA=0    1        00   00'
-            WRITE(20,105) XSELF,XFRGN,XCO2C,XO3CN,XO2CN,XN2CN,XRAYL
+            WRITE(20,105) XSELFU,XFRGNU,XCO2CU,XO3CNU,XO2CNU,XN2CNU,XRAYLU
             WRITE(20,106) WAVENUM1,WAVENUM2,DVOUT
-            WRITE(20,107) ' 1 13 7   1.000000  ', 
+            WRITE(20,107) ' 1 47 7   1.000000  ', 
      &              'MIDLATITUDE SUMM H1=   0.00 ',
      &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
-
-            DO 3000 LEV = 1, LEVDUP
-		TEMP = T0(LEV) + ITEMP*DELTAT
-                WATER = WS(1,LEV,ITP,IETA)*RHOTOT(LEV)/
-     &            (1.+WS(1,LEV,ITP,IETA))
-                RHODRY = RHOTOT(LEV)-WATER
-                BROAD = RHODRY*1.E5*(1.-WS(2,LEV,ITP,IETA)
-     &                -W_ORIG(3,LEV)-W_ORIG(4,LEV)
-     &                -W_ORIG(5,LEV)-W_ORIG(6,LEV)-
-     &                W_ORIG(7,LEV))
-                IF (LEV .EQ. 1) THEN
-   	          WRITE(20,9023) PRESS(1),TEMP,IPTHAK
-                ELSE
+               TEMP = T0(LEVDUP) + ITEMP*DELTAT
+               WATER = W(1,LEVDUP)*RHOTOT(LEVDUP)/(1.+W(1,LEVDUP))
+               RHODRY = RHOTOT(LEVDUP)-WATER
+               WRITE(20,9023) PRESS(LEVDUP),TEMP,IPTHAK
+               BROAD = RHODRY*1.E5*(1.-W(2,LEVDUP)-W(3,LEVDUP)-
+     &              W(4,LEVDUP)-W(5,LEVDUP)-W(6,LEVDUP)-W(7,LEVDUP))
+               WRITE(20,9015)W(1,LEVDUP),W(2,LEVDUP),W(3,LEVDUP),
+     &              W(4,LEVDUP),W(5,LEVDUP),W(6,LEVDUP),W(7,LEVDUP),
+     &              BROAD
+               DO 5000 LEV = LEVDUP+1, NLEV
+                  TEMP = T0(LEV) + ITEMP*DELTAT
+                  WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
+                  RHODRY = RHOTOT(LEV)-WATER
                   WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
-                ENDIF
-                WRITE(20,9015) 
-     &             WS(1,LEV,ITP,IETA),
-     &             WS(2,LEV,ITP,IETA),
-     &             W_ORIG(3,LEV),W_ORIG(4,LEV),
-     &             W_ORIG(5,LEV),W_ORIG(6,LEV),
-     &             W_ORIG(7,LEV),BROAD
- 3000          CONTINUE
+                  BROAD = RHODRY*1.E5*(1.-W(2,LEV)-W(3,LEV)-W(4,LEV)
+     &                 -W(5,LEV)-W(6,LEV)-W(7,LEV))
+                  WRITE(20,9015)W(1,LEV),W(2,LEV),W(3,LEV),W(4,LEV),
+     &                 W(5,LEV),W(6,LEV),W(7,LEV),BROAD
+ 5000          CONTINUE
                WRITE(20,109)
                CLOSE(20)
                INDEX = INDEX + 1
- 3500      CONTINUE
- 3750    CONTINUE
+ 5500 CONTINUE
+ 5750 CONTINUE
+      ENDIF
+ 5900 continue
 
-      CLOSE(25)
+
  100  FORMAT('TAPE5 FOR MLS')
  101  FORMAT(A40,A40)
  102  FORMAT(2(A40))
