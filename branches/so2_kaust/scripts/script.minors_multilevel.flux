@@ -19,8 +19,8 @@ set noglob
 #	minors_case	FIRST or NOT_FIRST 
 #       minors_index	index of minor species whose sorting level is being determined
 
-# Script generates LBLRTM and ARRTM flux files to determine best sorting level for
-# minor species K's. Lower 
+# Script generates Ks for minor species to determine best sorting level 
+# 
 
 # Two types of runs are possible:
 #       first
@@ -39,15 +39,13 @@ set noglob
 # and the next minor gas is turned on. Note that the same minor gas in the upper and
 # lower atmosphere should be treated as two different gases.
 # These runs will be turned by setting minors_case to NOT_FIRST.
-# After running plot_select_minor.pro, the used must edit input_param and 
-# run update_kg_minor.
 
 # Note :input_param must be set so that key species and minor species are included.
 
 
 # plot_select_minor.pro then compares the output from the LBLRTM and RRTM flux calculation
 
-# Karen Cady-Pereira   October 2000
+# Karen Cady-Pereira   May 2014 
 
 
 cd $1
@@ -76,6 +74,7 @@ if ($atmos_level == "LOWER" ) then
    set minor_gas = "igas_minor_l[(]$minors_index,1[)]"
 else if ($atmos_level == "UPPER" ) then
    set levels = (1 6 11 16 21 26 31 36 41)
+   #set levels = ( 6)
    set minor_gas = "igas_minor_u[(]$minors_index,1[)]"
 else
    echo "Can only run for UPPER or LOWER as argument 2"
