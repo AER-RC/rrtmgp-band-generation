@@ -265,15 +265,20 @@ c Handle eta = 9 case
            WS(2,IP,ITP,9) = 0.
            DENETA = VMRTODEN(WETA,RHOAIR)
            DENRAT = DENETA/DENSAT
-
-           IF (DENRAT .GT. 1.05) THEN
-             WS(1,IP,ITP,9) = WSATOVER
-             WRITE(25,*) 'CHANGING W',ia,
-     &         PRESS(ip),TEMP,
-     &         DENRAT,WS(1,IP,ITP,9)
-           ENDIF
            WRITE(25,*) ETA(9),PRESS(IP),TEMP,
      &       DENRAT
+           IF (DENRAT .GT. 1.05) THEN
+             WS(1,IP,ITP,9) = WSATOVER
+	     ETACALC=WS(1,IP,ITP,9)/
+     &         (WS(1,IP,ITP,9)+(W_ORIG(1,IP)/
+     &         W_ORIG(2,IP))*WS(2,IP,ITP,9))
+             WRITE(25,*) 'CHANGING W',eta(9),
+     &         PRESS(ip),TEMP,
+     &         DENRAT,WS(1,IP,ITP,9),etacalc
+           ELSE
+             WS(1,IP,ITP,9) = W_ORIG(1,IP)
+           ENDIF
+
  3605      CONTINUE
  3600    CONTINUE         
 
@@ -301,9 +306,10 @@ c Handle eta = 9 case
 
             DO 3000 LEV = 1, LEVDUP
 		TEMP = T0(LEV) + ITEMP*DELTAT
-                WATER = WS(1,LEV,ITP,IETA)*RHOTOT(LEV)/
+                RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
+                WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
-                RHODRY = RHOTOT(LEV)-WATER
+                RHODRY = RHOTOTD-WATER
                 BROAD = RHODRY*1.E5*(1.-WS(2,LEV,ITP,IETA)
      &                -W_ORIG(3,LEV)-W_ORIG(4,LEV)
      &                -W_ORIG(5,LEV)-W_ORIG(6,LEV)-

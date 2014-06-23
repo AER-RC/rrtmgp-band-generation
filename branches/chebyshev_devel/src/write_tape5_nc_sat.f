@@ -323,15 +323,18 @@ c Handle eta = 9 case
            WS(2,IP,ITP,9) = 0.
            DENETA = VMRTODEN(WETA,RHOAIR)
            DENRAT = DENETA/DENSAT
-
+           WRITE(25,*) ETA(9),PRESS(IP),TEMP,
+     &       DENRAT
            IF (DENRAT .GT. 1.05) THEN
              WS(1,IP,ITP,9) = WSATOVER
              WRITE(25,*) 'CHANGING W',ia,
      &         PRESS(ip),TEMP,
      &         DENRAT,WS(1,IP,ITP,9)
+           ELSE
+      	     WS(1,IP,ITP,9) = W_ORIG(1,IP)
            ENDIF
-           WRITE(25,*) ETA(9),PRESS(IP),TEMP,
-     &       DENRAT
+
+
  3605      CONTINUE
  3600    CONTINUE
 
@@ -394,9 +397,10 @@ c                  W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
 
             DO 3000 LEV = 1, LEVDUP
                 TEMP = T0(LEV) + ITEMP*DELTAT
-                WATER = WS(1,LEV,ITP,IETA)*RHOTOT(LEV)/
+	      	RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
+                WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
-                RHODRY = RHOTOT(LEV)-WATER
+                RHODRY = RHOTOTD-WATER
                 BROAD = RHODRY*1.E5*(1.-WS(2,LEV,ITP,IETA))
                 IF (LEV .EQ. 1) THEN
                   WRITE(20,9023) PRESS(1),TEMP,IPTHAK
