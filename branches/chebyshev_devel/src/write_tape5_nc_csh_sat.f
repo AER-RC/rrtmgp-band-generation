@@ -89,6 +89,12 @@ c icn(2) => upper atmosphere.
 
       include 'std_atmos.f'
 
+C Useful functions
+      SATDEN(TFRAC) = TFRAC*B*
+     &          EXP(C1+C2*TFRAC+C3*TFRAC**2)*1.0E-6
+      VMRTODEN(WV,RHOA) = (WV)/(1.0+WV)*RHOA
+      DENTOVMR(WV,RHOA) = WV/(RHOA-WV)
+      B = AVOGAD/WTWAT
 
 C Read in Namelist that provides the information concerning wavelength and
 C gases for each level.
@@ -270,20 +276,72 @@ c JSD
         OPEN(25,FILE='RHCALCS-nc-csh-sat.txt',FORM='FORMATTED')
 	WRITE(25,*) 'ETA,P,T,DENNUM/DENSAT'
 
-         DO 3600 IP=1,13
-           DO 3605 IT = 1,5
-             WS(1,IP,IT,1) = 0.
-             WS(2,IP,IT,1) = W_ORIG(2,IP)
+        DO 3600 IP=1,13
 
-             WS(1,IP,IT,101) = W_ORIG(1,IP)
-             WS(2,IP,IT,101) = 0.
-             DO 3610 IA = 2,100
-	       WS(1,IP,IT,IA) = W_ORIG(1,IP)
-     &         *ETA(IA)/(1. - ETA(IA))
-               WS(2,IP,IT,IA) = W_ORIG(2,IP)
+C Compute eta = 1 case as it doesn't depend on temperature
+          WS(1,IP,1:5,1) = 0.
+          WS(2,IP,1:5,1) = W_ORIG(2,IP)
+
+          DO 3605 ITEMP = -2,2
+C Set up the temperature structure
+            ITP = ITEMP+3
+            TEMP = T0(IP)+ITEMP*DELTAT
+
+C Compute the saturation density
+            TFRAC = TZERO/TEMP
+            PFRAC = PRESS(IP)/PZERO
+            DENSAT = SATDEN(TFRAC)
+            DENSATOVER = 1.05*SATDEN(TFRAC)
+            RHOAIR = ALOSMT*PFRAC*TFRAC
+
+C Calculate the MR of 1.05 the saturation value.
+            WSAT = DENTOVMR(DENSAT,RHOAIR)
+            WSATOVER = DENTOVMR(DENSATOVER,RHOAIR)
+
+C Compute eta = 2,8 case
+            DO 3610 IA = 2,100
+             WS(1,IP,ITP,IA) = W_ORIG(1,IP)*
+     &         ETA(IA)/(1. - ETA(IA))
+             WTMP = WS(1,IP,ITP,IA)
+             DENNUM = VMRTODEN(WS(1,IP,ITP,IA),RHOAIR)
+             DENRAT = DENNUM/DENSAT
+             WRITE(25,*) ETA(IA),PRESS(IP),TEMP,
+     &         DENRAT
+             IF (DENRAT .GT. 1.05) THEN
+               WS(1,IP,ITP,IA) = WSATOVER
+               WS(2,IP,ITP,IA) =
+     &           ((1.0-ETA(IA))/ETA(IA))*
+     &           (W_ORIG(2,IP)/
+     &           W_ORIG(1,IP))*
+     &           WS(1,IP,ITP,IA)
+	       ETACALC=WS(1,IP,ITP,IA)/
+     &         (WS(1,IP,ITP,IA)+(W_ORIG(1,IP)/
+     &         W_ORIG(2,IP))*WS(2,IP,ITP,IA))
+             WRITE(25,*) 'CHANGING W',ETA(ia),
+     &         PRESS(ip),TEMP,
+     &         DENRAT,WTMP,WS(1,IP,ITP,IA),etacalc
+             WRITE(25,*) 'CALCETA',etacalc
+             ELSE
+               WS(2,IP,ITP,IA) = W_ORIG(2,IP)
+             ENDIF
  3610        CONTINUE
- 3605       CONTINUE
- 3600      CONTINUE
+
+c Handle eta = 101 case
+           WS(2,IP,ITP,101) = 0.
+
+           WRITE(25,*) ETA(101),PRESS(IP),TEMP,
+     &       DENRAT
+           IF (DENRAT .GT. 1.05) THEN
+             WS(1,IP,ITP,101) = WSATOVER
+             WRITE(25,*) 'CHANGING W',eta(101),
+     &         PRESS(ip),TEMP,
+     &         DENRAT,WS(1,IP,ITP,101)
+           ELSE
+             WS(1,IP,ITP,101) = W_ORIG(1,IP)
+           ENDIF
+
+ 3605      CONTINUE
+ 3600    CONTINUE
 
          DO 3750 IETA = 1,101
 
@@ -348,44 +406,6 @@ c                  W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
             DO 3000 LEV = 1, LEVDUP
                 TEMP = T0(LEV) + ITEMP*DELTAT
                 ITP = ITEMP+3
-c Saturation  water vapor density
-                TFRAC = TZERO/TEMP
-                PFRAC = PRESS(LEV)/PZERO
-                DENSAT = TFRAC*B*
-     &          EXP(C1+C2*TFRAC+C3*TFRAC**2)*1.0E-6
-c Total density
-                RHOAIR = ALOSMT*PFRAC*TFRAC
-c Convert to number density
-                WTP = WS(1,LEV,ITP,IETA)
-                DENNUM = WS(1,LEV,ITP,IETA)
-     &          *RHOAIR/(1.+WS(1,LEV,ITP,IETA))
-                print*,lev,itp,ieta,WS(1,LEV,ITP,IETA),
-     &             rhoair,dennum,densat
-                SATRAT = DENNUM/DENSAT
-                WRITE(25,*) IETA,
-     &            PRESS(LEV),TEMP,
-     &            SATRAT
-                IF (SATRAT .GT. 1.05 .AND. IETA .LT. 101) THEN
-                  IF (IETA .EQ. 100) ISAT(LEV,ITP) = 1
-                  DENNUM = DENSAT*1.05
-                  WS(1,LEV,ITP,IETA) = DENNUM/(RHOAIR-DENNUM)
-                  WS(2,LEV,ITP,IETA) =
-     &              ((1.0-ETA(IETA))/ETA(IETA))
-     &              *(W_ORIG(IGAS2_L,LEV)/W_ORIG(IGAS1_L,LEV))
-     &              *WS(1,LEV,ITP,IETA)
-                  WRITE(25,*) 'CHANGING W:',
-     &              WTP,WS(1,LEV,ITP,IETA),
-     &              WS(1,LEV,ITP,IETA)/
-     &              (WS(1,LEV,ITP,IETA) +
-     &              (W_ORIG(IGAS1_L,LEV)/W_ORIG(IGAS2_L,LEV))
-     &              *WS(2,LEV,ITP,IETA))
-                ENDIF
-
-                IF (IETA .EQ. 101 .AND. ISAT(LEV,ITP) .EQ. 1) THEN
-                  WS(1,LEV,ITP,101) = WS(1,LEV,ITP,100)
-                  WRITE(25,*) 'CHANGING W @ 101:',WS(1,LEV,ITP,101)
-                ENDIF
-
                 RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*T0(LEV))
                 WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
