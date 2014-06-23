@@ -63,7 +63,7 @@ c Read input_param file; create array for writing
       DO 1425 JT = 1, 5
       	INDEX = 1
         DO 1325 JS = 1, 101
-      KG = '../csh_test_gb5/KG-T'//trim(FNUM(INDEX2))//
+      KG = '../gb5_eta101_sat/KG-T'//trim(FNUM(INDEX2))//
      &'-n'//trim(FNUM(INDEX))
           OPEN(10,FILE=KG,FORM='UNFORMATTED')
           DO 1225 JP = 1, 13
