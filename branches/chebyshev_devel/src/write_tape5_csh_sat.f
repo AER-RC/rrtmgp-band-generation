@@ -311,7 +311,7 @@ c               WRITE(20,101)
 
                DO 3000 LEV = 1, LEVDUP
                 TEMP = T0(LEV) + ITEMP*DELTAT
-                RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*T0(LEV))
+                RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
                 WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
                 RHODRY = RHOTOT(LEV)-WATER

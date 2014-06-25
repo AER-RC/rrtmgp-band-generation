@@ -405,8 +405,7 @@ c                  W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
 
             DO 3000 LEV = 1, LEVDUP
                 TEMP = T0(LEV) + ITEMP*DELTAT
-                ITP = ITEMP+3
-                RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*T0(LEV))
+                RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
                 WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
                 RHODRY = RHOTOT(LEV)-WATER
