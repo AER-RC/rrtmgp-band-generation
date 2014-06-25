@@ -68,7 +68,7 @@ C***************************************************
       namelist /iplanck/ isortplanck
 
       data igas_on/0/
-      DATA NLAYERS/47/
+      DATA NLAYERS/13/
       DATA INFINITY/50000/
       DATA NLINE/MLAYERS*0/
       DATA FNUM/'1','2','3','4','5','6','7','8','9','10',
@@ -232,8 +232,8 @@ C     INTERVALS FOR INTEGRATION.
  300  CONTINUE
 
 C  *********** CALCULATION LOOP OVER ATMOSPHERIC LAYERS **********  C
-c      DO 5000 LEVEL=1, NLAYERS
-         level = isortplanck(igas_on)
+      DO 5000 LEVEL=1, NLAYERS
+c          level = isortplanck(igas_on)
          print*,'level',level
 C         Otherwise, read from the ODKD files (from LBLRTM).
 c          The NC- files represent the OD output from LBLRTM where you only 
@@ -378,8 +378,8 @@ c              IF (IGAS2_U .EQ. 0) THEN
 c                 COLUMFAC = WK(IGAS1_U)
 c                 COLUMFAC = 1.E20/COLUMFAC
 c              ELSE 
-c                 COLUMFAC = WK(IGAS1_U) + 
-c     &                (W_H_MLS(IGAS1_U,LEVEL)/W_H_MLS(IGAS2_U,LEVEL))
+c                COLUMFAC = WK(IGAS1_U) + 
+c    &                (W_H_MLS(IGAS1_U,LEVEL)/W_H_MLS(IGAS2_U,LEVEL))
 c     &                *WK(IGAS2_U)
 c                 COLUMFAC = 1.E20/COLUMFAC
 c              ENDIF
@@ -413,7 +413,7 @@ C     number times the reciprocal of the total number of lines.
 
            CLOSE(INF)
            CLOSE(ICONT)
-c 5000 CONTINUE
+ 5000 CONTINUE
 
  5001 CONTINUE
 
