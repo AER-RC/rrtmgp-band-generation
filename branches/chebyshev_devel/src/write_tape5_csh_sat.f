@@ -314,7 +314,7 @@ c               WRITE(20,101)
                 RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
                 WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
-                RHODRY = RHOTOT(LEV)-WATER
+                RHODRY = RHOTOTD-WATER
                 BROAD = RHODRY*1.E5*(1.-WS(2,LEV,ITP,IETA)
      &                -W_ORIG(3,LEV)-W_ORIG(4,LEV)
      &                -W_ORIG(5,LEV)-W_ORIG(6,LEV)-W_ORIG(7,LEV))

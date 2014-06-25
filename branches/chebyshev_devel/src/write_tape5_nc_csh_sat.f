@@ -408,7 +408,7 @@ c                  W(IGAS2_L,:) = W_ORIG(IGAS2_L,:)
                 RHOTOTD = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
                 WATER = WS(1,LEV,ITP,IETA)*RHOTOTD/
      &            (1.+WS(1,LEV,ITP,IETA))
-                RHODRY = RHOTOT(LEV)-WATER
+                RHODRY = RHOTOTD-WATER
                 BROAD = RHODRY*1.E5*(1.-WS(2,LEV,ITP,IETA))
                 IF (LEV .EQ. 1) THEN
                   WRITE(20,9023) PRESS(1),TEMP,IPTHAK
