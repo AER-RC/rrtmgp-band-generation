@@ -1,0 +1,124 @@
+#!/bin/tcsh
+#Created: Jennifer Delamere January 1999
+#INPUT: Type script.gen_2band DIRNAME where DIRNAME is the name of the
+#directory you want to create to store all the output.
+#NAMELIST NEEDED: Call it 'input_param'
+
+#Source input set of codes; set up lbl,tape3,scriptdirs,etc
+source input_codes
+
+#Create a directory for the band you are interested in
+mkdir $1
+echo Create Directory: $1
+
+# Specify whether using "reg" (eta = 1,9) or "csh" (eta = 1,101)
+if ($2 == "reg") then 
+  set wtape = "write_tape5_sat"
+  set wtapenc = "write_tape5_nc_sat"
+  set wmult = "write_data_multiple"
+  set jlmax = "09"
+else
+  set wtape = "write_tape5_csh_sat"
+  set wtapenc = "write_tape5_nc_csh_sat"
+  set wmult = "write_data_multiple_csh"
+  set jlmax = "101"
+endif
+
+#Copy NAMELIST (used by f90 codes) file to the directories that need it.
+\cp input_param $1/. 
+\cp input_codes $1/.
+
+#Now commence work in the new band directory
+cd $1
+
+#Get a copy of TAPE3 for lblrtm_f90 run
+\ln -s ${lblver} lblrtm_f90
+\ln -s ${t3ver} TAPE3
+\cp ${scriptdir}/PRESSURE.PROFILE .
+
+echo Writing TAPE5s
+#Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
+#Includes all absorbers, including the H20 continuum
+${exedir}/${wtape} < input_param
+
+#Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
+#Do NOT include the H20 continuum
+echo ${exedir}/${wtapenc}
+${exedir}/${wtapenc} < input_param
+
+#LOWER ATMOSPHERE
+#Each troposphere run (P > 100mb) has 13 layers.  Generate the 
+#k-distributions for 5 runs with T(ref), T(ref) +/- 15 K, 
+#T(ref) +/- 30 K.
+
+#Test to see if you are doing case of no or one or two major gases
+#by checking the existence of the tape5 files.
+
+if ( -e "tape5-T03-n01") then
+    @ jl=1
+    echo Two Key Species in Lower Atmosphere
+else
+    @ jl=9	
+    echo One Key Species in Lower Atmosphere
+endif
+
+echo $jlmax
+
+if (-e "tape5-T03-n${jlmax}") then
+    echo Starting
+else
+    echo No Key Species in Lower Atmosphere
+    @ jl = 11
+endif
+
+# loop over eta
+while ($jl <= ${jlmax})
+    @ i=1
+# loop over reference temperatures
+    while ($i < 6)
+        if ($jl < 10) then
+     	  echo eta = 0$jl tref = 0$i
+	  set tape5nc = tape5nc-T0${i}-n0${jl}
+	  set tape5od = tape5-T0${i}-n0${jl} 
+	  set kgfile = KG-T0${i}-n0${jl}
+        else
+     	  echo eta = $jl tref = 0$i
+	  set tape5nc = tape5nc-T0${i}-n${jl}
+	  set tape5od = tape5-T0${i}-n${jl} 
+	  set kgfile = KG-T0${i}-n${jl}
+        endif
+#Run LBLRTM_F90 without the WV continuum and without all absorbers except
+#key species
+	\cp ${tape5nc} TAPE5
+        lblrtm_f90
+#LBLRTM_F90 generates ODint_ files for each layer. Move
+#these to another filename
+	${scriptdir}/script.mv_files 13 ODint_ NCint_
+#Run LBLRTM_F90 with all the absorbers including continua except WV.
+	\rm TAPE5
+	\cp ${tape5od} TAPE5
+	lblrtm_f90
+	${exedir}/kdis_2sort_l < input_param 
+#The output of absorption coefficients in file CK_ABS.DAT
+#to reference file
+        \mv -f CK_ABS.DAT ${kgfile}
+
+	\rm OD*
+        \rm NC*
+#Advance counter and run another reference TAPE5 file
+	@ i++
+    end
+    @ jl++
+end
+
+echo 'Writing absorption coefficients to file'
+
+${exedir}/${wmult} < input_param
+
+echo Finish Absorption Coefficients
+
+
+
+
+
+
