@@ -39,15 +39,15 @@ c      REAL KB_2(9,5,13:59,16)
       OPEN(20,FILE='kg_planck.f',FORM='FORMATTED')
 
       write(20,8000)
-      write(20,8001)
-      write(20,8002) 
-      write(20,8004)
 
       if (igas2_l .eq. 0) then
                   contfile='KG_bbp1_n09'
+		  write(20,9001)
+		  write(20,9002) 
+		  write(20,8004)
                   open(14,file=contfile,form='formatted')
                   ii = 9
-                  write(20,8010) ii
+                  write(20,9010) 
                   do 600 iig=1,16
                   read(14,*) fracref(iig)
  600              continue
@@ -57,6 +57,9 @@ c      REAL KB_2(9,5,13:59,16)
                   write(20,8051) fracref(13:16)
 
       else
+	 write(20,8001)
+	 write(20,8002) 
+	 write(20,8004)
          do 625 ii=1,9 
             contfile = 'KG_bbp1_n'//fnum(ii)
             open(14,file=contfile,form='formatted')
@@ -75,7 +78,7 @@ c      REAL KB_2(9,5,13:59,16)
          contfile='KG_bbp2_n09'
                   open(14,file=contfile,form='formatted')
                   ii = 5
-                  write(20,8015) ii 
+                  write(20,9015) 
                   do 650 iig=1,16
                   read(14,*) fracref(iig)
  650              continue
@@ -106,10 +109,15 @@ c      REAL KB_2(9,5,13:59,16)
  8000 FORMAT('       PARAMETER (MG=16,NMINOR=7)')
  8001 FORMAT('       REAL FRACREFA(MG,9)')
  8002 FORMAT('       REAL FRACREFB(MG,5)')
+ 9001 FORMAT('       REAL FRACREFA(MG)')
+ 9002 FORMAT('       REAL FRACREFB(MG)')
+
  8004 FORMAT('       COMMON /K_PLANCK/ FRACREFA, FRACREFB')
 
  8010  FORMAT('      DATA (FRACREFA(IG,',i2,'),IG=1,16) /')
  8015  FORMAT('      DATA (FRACREFB(IG,',i2,'),IG=1,16) /')
+ 9010  FORMAT('      DATA (FRACREFA(IG),IG=1,16) /')
+ 9015  FORMAT('      DATA (FRACREFB(IG),IG=1,16) /')
 
  8050  FORMAT('     &',1P,6(E10.4,','),0P)
  8051  FORMAT('     &',1P,3(E10.4,','),E10.4,0P,'/')

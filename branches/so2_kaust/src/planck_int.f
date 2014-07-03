@@ -1,9 +1,10 @@
       program comput_planck
       real wnumlo, wnumhi, plk_val(181)
       integer i,j,k,ii,i1,i2,nbands
-      integer igas_minor_l(7,1),igas_minor_u(7,1)
+      integer igas_minor_l(9,1),igas_minor_u(9,1)
       namelist /par/ wavenumber1,wavenumber2, igas1_l,igas2_l,
-     &               igas1_u,igas2_u,igas_minor_l,igas_minor_u
+     &               igas1_u,igas2_u,igas_minor_l,igas_minor_u,
+     &               nmol
       t=160.
 
       nbands=1
@@ -60,9 +61,9 @@ c     &     //)
  101  format ('      DATA (TOTPLNK(I,',i3,'),I=51,100)/')
  102  format ('      DATA (TOTPLNK(I,',i3,'),I=101,150)/')
  103  format ('      DATA (TOTPLNK(I,',i3,'),I=151,181)/')
- 104  format ('     &',4(e11.5,','),e11.5,'/')
- 105  format ('     &',5(e11.5,','))
- 106  format ('     &',e11.5,'/')
+ 104  format ('     &',4(es11.5,','),es11.5,'/')
+ 105  format ('     &',5(es11.5,','))
+ 106  format ('     &',es11.5,'/')
 
       end
 

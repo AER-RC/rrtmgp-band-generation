@@ -39,6 +39,12 @@ planck_int: planck_int.f r1mach.o
 r1mach.o: r1mach.f
 	pgf90 -c -o r1mach.o r1mach.f
 
+$(OBJ2): std_atmos.f
+
+$(OBJ3): std_atmos.f
+
+$(OBJ1): std_atmos_kdis.f
+
 
 % :%.f 
 	pgf90  $< -o $(OBJPATH)/$@

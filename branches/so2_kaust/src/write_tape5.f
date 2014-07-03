@@ -402,26 +402,26 @@ c               WRITE(20,101)
       ENDIF
 
 c Generate data for kdis_sort
-       open(50,file='initial_std')
-       do iii=1,nmol 
-	  write(50,8005) iii
-          do j=1,10,5
-             write(50,8010) w_orig(iii,j:j+4)
-          end do
-	  write(50,8015) w_orig(iii,j:levdup)
-       end do
+c      open(50,file='initial_std')
+c      do iii=1,nmol 
+c  	write(50,8005) iii
+c         do j=1,10,5
+c            write(50,8010) w_orig(iii,j:j+4)
+c         end do
+c 	 write(50,8015) w_orig(iii,j:levdup)
+c      end do
 
-       nupper = nlev-levdup+1
-       nlines = nupper/5
-       nlong = levdup+nlines*5-1
-       do iii=1,nmol 
-	  write(50,8020) iii
-          do j=levdup,nlong,5
-             write(50,8010) w_orig(iii,j:j+4)
-          end do
-	  write(50,8025) w_orig(iii,j:nlev)
-       end do
-       close(50)
+c      nupper = nlev-levdup+1
+c      nlines = nupper/5
+c      nlong = levdup+nlines*5-1
+c      do iii=1,nmol 
+c   write(50,8020) iii
+c         do j=levdup,nlong,5
+c            write(50,8010) w_orig(iii,j:j+4)
+c         end do
+c	  write(50,8025) w_orig(iii,j:nlev)
+c      end do
+c      close(50)
 
  100  FORMAT('TAPE5 FOR MLS')
  101  FORMAT(A40,A40)

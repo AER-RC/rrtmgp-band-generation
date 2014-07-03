@@ -1,4 +1,4 @@
-      PROGRAM KDIS_2SORT_MINOR
+      PROGRAM KDIS_2SORT_PLANCK
 C***************************************************
 cProgram version created by: Jennifer Delamere January, 1999
 cModified from routine received from E. Mlawer, AER, Inc.
