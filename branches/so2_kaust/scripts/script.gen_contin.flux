@@ -1,18 +1,17 @@
 #!/bin/csh -f
 
-ln -s ../lbl_f90/TAPE3 .
 
 #Generate TAPE5s for self-continuum
 
-head -6 tape5-T03-n09 > tmp
-cat tmp ../central_exec_scripts/template_self > t5_self
+head -7 tape5-T03-n09 > tmp
+cat tmp ../scripts/template_self > t5_self
 set tape5od = t5_self
 \rm TAPE5
 \cp $tape5od TAPE5
 lblrtm_f90
 
 \rm self.coef
-\cp ../central_exec_scripts/self.coef.296 self.coef
+\cp ../scripts/self.coef.296 self.coef
 
 set kgfile = KG_bbs1
 echo " &lev level=1/" > tmp
@@ -23,7 +22,7 @@ kdis_2sort_self < input_param_self
 \mv -f CK_ABS_SELF.DAT ${kgfile}		
 
 \rm self.coef
-\cp ../central_exec_scripts/self.coef.260 self.coef
+\cp ../scripts/self.coef.260 self.coef
 
 set kgfile = KG_bbs2
 echo " &lev level=2/" > tmp
@@ -34,15 +33,15 @@ kdis_2sort_self < input_param_self
 \mv -f CK_ABS_SELF.DAT ${kgfile}		
 
 #Generate TAPE5s for foreign-continuum
-head -6 tape5-T03-n09 > tmp
-cat tmp ../central_exec_scripts/template_foreign > t5_foreign
+head -7 tape5-T03-n09 > tmp
+cat tmp ../scripts/template_foreign > t5_foreign
 set tape5od = t5_foreign
 \rm TAPE5
 \cp ${tape5od} TAPE5
 lblrtm_f90
 
 \rm for.coef
-\cp ../central_exec_scripts/for.coef.296 for.coef
+\cp ../scripts/for.coef.296 for.coef
 set kgfile = KG_bbf1
 echo " &lev level=1/" > tmp
 cat input_param tmp > input_param_for
@@ -52,7 +51,7 @@ kdis_2sort_for < input_param_for
 \mv -f CK_ABS_FOR.DAT ${kgfile}		
 
 \rm for.coef
-\cp ../central_exec_scripts/for.coef.260 for.coef
+\cp ../scripts/for.coef.260 for.coef
 set kgfile = KG_bbf2
 echo " &lev level=2/" > tmp
 cat input_param tmp > input_param_for
@@ -62,7 +61,7 @@ kdis_2sort_for < input_param_for
 \mv -f CK_ABS_FOR.DAT ${kgfile}		
 
 \rm for.coef
-\cp ../central_exec_scripts/for.coef.224 for.coef
+\cp ../scripts/for.coef.224 for.coef
 set kgfile = KG_bbf3
 echo " &lev level=3/" > tmp
 cat input_param tmp > input_param_for
@@ -72,7 +71,7 @@ kdis_2sort_for < input_param_for
 \mv -f CK_ABS_FOR.DAT ${kgfile}		
 
 \rm for.coef
-\cp ../central_exec_scripts/for.coef.260 for.coef
+\cp ../scripts/for.coef.260 for.coef
 set kgfile = KG_bbf4
 echo " &lev level=4/" > tmp
 cat input_param tmp > input_param_for
@@ -90,7 +89,11 @@ write_data_cont
 if ( -e "tape5-T03-n01") then
     @ jl=1
 else
-    @ jl=9	
+    if (-e "tape5-T03-n09") then
+       @ jl=9	
+    else
+       @ jl=10
+    endif
 endif
 
 while ($jl < 10)
@@ -112,7 +115,11 @@ end
 if ( -e "tape5-T08-n01") then
     @ ju=1
 else
-    @ ju=9
+    if (-e "tape5-T08-n09") then
+       @ ju=9
+    else
+       @ ju=10
+    endif
 endif
 
 while ($ju < 10)
@@ -131,19 +138,3 @@ while ($ju < 10)
 end
 
 write_data_planck < input_param
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -27,7 +27,7 @@ set atmos_level = $2
 
 
 if ($atmos_level == "UPPER" ) then
-   set lower_planck = `nawk 'NR == 9 {print $4}' ../input_param` 
+   set lower_planck = `awk 'NR == 11 {print $4}' ../input_param` 
    echo $lower_planck
    \cp kg_planck_LOWER_PL_${lower_planck}.f kg_planck_lower.f 
 endif
@@ -47,10 +47,10 @@ endif
 
 foreach  i ( $levels )
   echo PL_$i
-  nawk -v level=$i -v atmos=$2 ' \
-	  NR!=9 {print}\
-          NR==9 && atmos=="LOWER" {print " "$1, $2, $3, level, $5, $6, $7"/"}\
-          NR==9 && atmos=="UPPER" {print " "$1, $2, $3, $4, $5, $6, level"/"}  ' input_param > input_param_$2_PL_$i
+  awk -v level=$i -v atmos=$2 ' \
+	  NR!=11 {print}\
+          NR==11 && atmos=="LOWER" {print " "$1, $2, $3, level, $5, $6, $7"/"}\
+          NR==11 && atmos=="UPPER" {print " "$1, $2, $3, $4, $5, $6, level"/"}  ' input_param > input_param_$2_PL_$i
   \cp input_param_$2_PL_$i $1/input_param
   \mv input_param_$2_PL_$i $1/input_param_$2_PL_$i
   script.gen_planck_only_key.flux $1 PL_$i $2
