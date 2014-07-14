@@ -306,6 +306,10 @@ C     Interpolate in ln(pressure).
  1000 CONTINUE
       CLOSE(10)
 
+C NO MAJOR GASES IN THE LOWER ATMOSPHERE
+
+      IF (IGAS1_L .EQ. 0 .AND. IGAS2_L .EQ. 0) GOTO 3900
+
 C  ONE MAJOR GAS, LOWER ATMOSPHERE : Write tape5's for situation 
 c     with one major gas.  
       IF (IGAS2_L. EQ. 0) THEN 
@@ -413,6 +417,7 @@ c               WRITE(20,101)
  3750    CONTINUE
       ENDIF
 
+ 3900 CONTINUE
 C  ONE MAJOR GAS, UPPER ATMOSPHERE : Write tape5's for situation 
 c     with one major gas.  
       IF (IGAS2_U .EQ. 0 .and. igas1_u .ne. 0) THEN

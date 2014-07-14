@@ -68,7 +68,7 @@ C***************************************************
       namelist /iplanck/ isortplanck
 
       data igas_on/0/
-      DATA NLAYERS/13/
+      DATA NLAYERS/47/
       DATA INFINITY/50000/
       DATA NLINE/MLAYERS*0/
       DATA FNUM/'1','2','3','4','5','6','7','8','9','10',
@@ -195,8 +195,8 @@ C     *** Statement function to calculate the Planck function
 C  ************ START OF EXECUTABLE STATEMENTS **********
 
       READ (*,PAR)
-      read (*,iplanck)
-      read(*,igaspar)
+c      read (*,iplanck)
+c      read(*,igaspar)
 
       V1USER = WAVENUMBER1
       V2USER = WAVENUMBER2
@@ -206,7 +206,7 @@ C  ************ START OF EXECUTABLE STATEMENTS **********
       IBIN =  7
 
       FILE4  = 'CK_ABS_PL.DAT'
-      OPEN(IBIN,FILE=FILE4,  FORM='FORMATTED')
+      OPEN(IBIN,FILE=FILE4,FORM='UNFORMATTED')
 
       t1=time()
 
@@ -232,9 +232,10 @@ C     INTERVALS FOR INTEGRATION.
  300  CONTINUE
 
 C  *********** CALCULATION LOOP OVER ATMOSPHERIC LAYERS **********  C
+      print*,'Starting level calcs'
       DO 5000 LEVEL=1, NLAYERS
 c          level = isortplanck(igas_on)
-         print*,'level',level
+c         print*,'level',level
 C         Otherwise, read from the ODKD files (from LBLRTM).
 c          The NC- files represent the OD output from LBLRTM where you only 
 c          have one key species and all other species are set to zero.
@@ -371,7 +372,7 @@ C     order. XCONT is sorted according to XKL.
            CALL SORT2(NLINE(LEVEL),XKL,XCONT,XTEMP,IINDEX)
            TOTPLANK = (PLANK(V1USER,TAVE)-PLANK(V2USER,TAVE))/
      &          (V2USER-V1USER)           
-           print*,'tot',tave,PLANK(V1USER,TAVE),PLANK(V2USER,TAVE)
+c           print*,'tot',tave,PLANK(V1USER,TAVE),PLANK(V2USER,TAVE)
 c The following if statement tests if the binary parameter method should
 c     be implemented in the case for 2 major gases.
 c              IF (IGAS2_U .EQ. 0) THEN
@@ -400,7 +401,7 @@ c           columfac = 1.e20/columfac
               CONTAVG(IG) = VCONTAVG(IG)
 c              ABSCOEF = CONTAVG(IG)*COLUMFAC
               ABSCOEF = CONTAVG(IG)*WT(IG)/TOTPLANK
-              WRITE(IBIN,*) ABSCOEF              
+              WRITE(IBIN) ABSCOEF              
  3337      CONTINUE
 
 C     The k values are now in ascending order in the array XKL. The probability
@@ -414,7 +415,6 @@ C     number times the reciprocal of the total number of lines.
            CLOSE(INF)
            CLOSE(ICONT)
  5000 CONTINUE
-
  5001 CONTINUE
 
 
