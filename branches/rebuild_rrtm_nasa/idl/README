@@ -1,0 +1,8 @@
+4/9/14
+
+Copied /storm/rc3/jdelamer//flrt_jen/regenerate_rrtm/rrtm_final/gb3_final/convert_minor.pro
+
+5/27
+
+Rebuilt the SO2 std prof based on corrected and smoothed profiles in /project/p1905/build_inputs (see README
+there).
