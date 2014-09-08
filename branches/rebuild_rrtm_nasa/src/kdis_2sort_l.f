@@ -48,7 +48,6 @@ C***************************************************
 
       CHARACTER*50 FILE1,FILE2,FILE4,FILE5
 
-      CHARACTER*2 FNUM(MLAYERS)
 
       DIMENSION NPANEL(MLAYERS)
       DIMENSION P(MLAYERS),T(MLAYERS)
@@ -63,16 +62,28 @@ C***************************************************
       DIMENSION W_H_MLS(mxmol,47)
       integer igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,
-     &               IGAS1_U,IGAS2_U,igas_minor_l,igas_minor_u,nmol
+     &               IGAS1_U,IGAS2_U,igas_minor_l,igas_minor_u,
+     &               nmol
 
       DATA NLAYERS/13/
       DATA INFINITY/50000/
       DATA NLINE/MLAYERS*0/
-      DATA FNUM/'1','2','3','4','5','6','7','8','9','10',
-     &    '11','12','13','14','15','16','17','18','19','20',
-     &    '21','22','23','24','25','26','27','28','29','30',
-     &    '31','32','33','34','35','36','37','38','39','40',
-     &    '41','42','43','44','45','46','47'/
+C This code should be toggled depending on whether new or old
+C LBL (old -> ODint_01; new -> ODint_001)
+C      CHARACTER*3 FNUM(MLAYERS)
+C      DATA FNUM/'001','002','003','004','005','006','007',
+C     &    '008','009','010','011','012','013','014','015',
+C     &    '016','017','018','019','020','021','022','023',
+C     &    '024','025','026','027','028','029','030','031',
+C     &    '032','033','034','035','036','037','038','039',
+C     &    '040','041','042','043','044','045','046','047'/
+      CHARACTER*2 FNUM(MLAYERS)
+      DATA FNUM/'01','02','03','04','05','06','07',
+     &    '08','09','10','11','12','13','14','15',
+     &    '16','17','18','19','20','21','22','23',
+     &    '24','25','26','27','28','29','30','31',
+     &    '32','33','34','35','36','37','38','39',
+     &    '40','41','42','43','44','45','46','47'/
       DATA WT/
      &     0.1527534276,0.1491729617,0.1420961469,0.1316886544,
      &     0.1181945205,0.1019300893,0.0832767040,0.0626720116,
@@ -119,13 +130,8 @@ C     INTERVALS FOR INTEGRATION.
 C  *********** CALCULATION LOOP OVER ATMOSPHERIC LAYERS **********  C
       DO 5000 LEVEL=1, NLAYERS
 
-         IF (LEVEL .LT. 10) THEN
-            FILE1 = 'ODint_00'//FNUM(LEVEL)
-            FILE2 = 'NCint_00'//FNUM(LEVEL)
-         ELSE 
-            FILE1 = 'ODint_0'//FNUM(LEVEL)
-            FILE2 = 'NCint_0'//FNUM(LEVEL)
-         ENDIF
+         FILE1 = 'ODint_'//FNUM(LEVEL)
+         FILE2 = 'NCint_'//FNUM(LEVEL)
 
          OPEN(INF,FILE=FILE1,FORM='UNFORMATTED')
          OPEN(ICONT,FILE=FILE2,FORM='UNFORMATTED')
