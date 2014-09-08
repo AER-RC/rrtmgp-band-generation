@@ -52,7 +52,7 @@ C***************************************************
       DIMENSION XKL(NLINES),XCONT(NLINES)
       DIMENSION NPTS0(16),VCONTTOT(16)
       DIMENSION VCONTAVG(16),CONTAVG(16)
-      DIMENSION IINDEX(NLINES),XTEMP(NLINES),J0MIN(16),J0MAX(16)
+      DIMENSION J0MIN(16),J0MAX(16)
       dimension igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
       
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,
@@ -272,7 +272,7 @@ C     NLINE(LEVEL) is the the number of absorption coeff/optical depths to be
 C     sorted. XKL is the array of absorption coeff. that is to be sorted in ascending
 C     order. XCONT is sorted according to XKL.
 
-           CALL SORT2(NLINE(LEVEL),XKL,XCONT,XTEMP,IINDEX)
+           CALL SORT2(NLINE(LEVEL),XKL,XCONT)
 
            XLSPACE = FLOAT(NLINE(LEVEL)) + 0.5
            DO 3337 IG = 1, 16
@@ -316,113 +316,105 @@ C  ********** END OF MAIN CALCULATION LOOP OVER ATMOSPHERIC LAYERS **********
       STOP
       END
 
-c****************SORTING ROUTINE; NUMERICAL RECIPES************
-c Numerical Recipes provided the sort routines used here.
-c Sorts array RA(1:n) into ascending order while making the corresponding 
-c rearrangements of arrays RB(1:n). An index is constructed with the 
-c IWKSP.
-c
-cInput into subroutine:
-c     N - Number of elements to be sorted.
-c     RA(1:N) - Primary array on which to perform sort. 
-c     RB(1:N) - Secondary array that follows sort.
-c     WKSP - Temporary array
-c     IWKSP -Index for sorted array.
-C******************************************************************  
-      SUBROUTINE SORT2(N,RA,RB,WKSP,IWKSP)
-      DIMENSION RA(N),RB(N),WKSP(N),IWKSP(N)
-
-
-c SORTING: If you want to preserve the index for sorting more than 
-c two arrays, uncomment 'indexquick' or 'indexheap' (quick is faster). 
-c Then uncomment the do loops that follow the sorting,
-c comment the quicksort call. That is do 11, do 12, do 13, do 14.
-
-
-      call quicksort(n,ra,rb)
-
-      RETURN
+C F77/Numerical Recipes
+C Chapter 8
+C Sorts an array arr(1:n) into ascending order using Quicksort, while making the
+C corresponding rearrangement of the array brr(1:n).
+C Note: http://www.fing.edu.uy/if/cursos/fiscomp/extras/numrec/book/bookfpdf.html.
+C Thanks to special permission from Cambridge University Press, we are able to 
+C bring you the complete Numerical Recipes in Fortran 77 book On-Line! 
+C f77_sources.tar.gz
+      SUBROUTINE sort2(n,arr,brr)
+      INTEGER n,M,NSTACK
+      REAL arr(n),brr(n)
+      PARAMETER (M=7,NSTACK=50)
+      INTEGER i,ir,j,jstack,k,l,istack(NSTACK)
+      REAL a,b,temp
+      jstack=0
+      l=1
+      ir=n
+1     if(ir-l.lt.M)then
+        do 12 j=l+1,ir
+          a=arr(j)
+          b=brr(j)
+          do 11 i=j-1,l,-1
+            if(arr(i).le.a)goto 2
+            arr(i+1)=arr(i)
+            brr(i+1)=brr(i)
+11        continue
+          i=l-1
+2         arr(i+1)=a
+          brr(i+1)=b
+12      continue
+        if(jstack.eq.0)return
+        ir=istack(jstack)
+        l=istack(jstack-1)
+        jstack=jstack-2
+      else
+        k=(l+ir)/2
+        temp=arr(k)
+        arr(k)=arr(l+1)
+        arr(l+1)=temp
+        temp=brr(k)
+        brr(k)=brr(l+1)
+        brr(l+1)=temp
+        if(arr(l).gt.arr(ir))then
+          temp=arr(l)
+          arr(l)=arr(ir)
+          arr(ir)=temp
+          temp=brr(l)
+          brr(l)=brr(ir)
+          brr(ir)=temp
+        endif
+        if(arr(l+1).gt.arr(ir))then
+          temp=arr(l+1)
+          arr(l+1)=arr(ir)
+          arr(ir)=temp
+          temp=brr(l+1)
+          brr(l+1)=brr(ir)
+          brr(ir)=temp
+        endif
+        if(arr(l).gt.arr(l+1))then
+          temp=arr(l)
+          arr(l)=arr(l+1)
+          arr(l+1)=temp
+          temp=brr(l)
+          brr(l)=brr(l+1)
+          brr(l+1)=temp
+        endif
+        i=l+1
+        j=ir
+        a=arr(l+1)
+        b=brr(l+1)
+3       continue
+          i=i+1
+        if(arr(i).lt.a)goto 3
+4       continue
+          j=j-1
+        if(arr(j).gt.a)goto 4
+        if(j.lt.i)goto 5
+        temp=arr(i)
+        arr(i)=arr(j)
+        arr(j)=temp
+        temp=brr(i)
+        brr(i)=brr(j)
+        brr(j)=temp
+        goto 3
+5       arr(l+1)=arr(j)
+        arr(j)=a
+        brr(l+1)=brr(j)
+        brr(j)=b
+        jstack=jstack+2
+        if(jstack.gt.NSTACK)pause 'NSTACK too small in sort2'
+        if(ir-i+1.ge.j-l)then
+          istack(jstack)=ir
+          istack(jstack-1)=i
+          ir=j-1
+        else
+          istack(jstack)=j-1
+          istack(jstack-1)=l
+          l=i
+        endif
+      endif
+      goto 1
       END
-
-C**********************QUICKSORT ROUTINE*****************
-
-      SUBROUTINE QUICKSORT(N,ARR,BRR)
-      PARAMETER (M=7,NSTACK=50,FM=7875.,FA=211.,FC=1663.
-     *    ,FMI=1.2698413E-4)
-      DIMENSION ARR(N),BRR(N),ISTACK(NSTACK)
-      JSTACK=0
-      L=1
-      IR=N
-      FX=0.
-10    IF(IR-L.LT.M)THEN
-        DO 13 J=L+1,IR
-          A=ARR(J)
-          B=BRR(J)
-          DO 11 I=J-1,1,-1
-            IF(ARR(I).LE.A)GO TO 12
-            ARR(I+1)=ARR(I)
-            BRR(I+1)=BRR(I)
-11        CONTINUE
-          I=0
-12        ARR(I+1)=A
-          BRR(I+1)=B
-13      CONTINUE
-        IF(JSTACK.EQ.0)RETURN
-        IR=ISTACK(JSTACK)
-        L=ISTACK(JSTACK-1)
-        JSTACK=JSTACK-2
-      ELSE
-        I=L
-        J=IR
-        FX=MOD(FX*FA+FC,FM)
-        IQ=L+(IR-L+1)*(FX*FMI)
-        A=ARR(IQ)
-        B=BRR(IQ)
-        ARR(IQ)=ARR(L)
-        BRR(IQ)=BRR(L)
-20      CONTINUE
-21        IF(J.GT.0)THEN
-            IF(A.LT.ARR(J))THEN
-              J=J-1
-              GO TO 21
-            ENDIF
-          ENDIF
-          IF(J.LE.I)THEN
-            ARR(I)=A
-            BRR(I)=B
-            GO TO 30
-          ENDIF
-          ARR(I)=ARR(J)
-          BRR(I)=BRR(J)
-          I=I+1
-22        IF(I.LE.N)THEN
-            IF(A.GT.ARR(I))THEN
-              I=I+1
-              GO TO 22
-            ENDIF
-          ENDIF
-          IF(J.LE.I)THEN
-            ARR(J)=A
-            BRR(J)=B
-            I=J
-            GO TO 30
-          ENDIF
-          ARR(J)=ARR(I)
-          BRR(J)=BRR(I)
-          J=J-1
-        GO TO 20
-30      JSTACK=JSTACK+2
-        IF(JSTACK.GT.NSTACK)PAUSE 'NSTACK MUST BE MADE LARGER.'
-        IF(IR-I.GE.I-L)THEN
-          ISTACK(JSTACK)=IR
-          ISTACK(JSTACK-1)=I+1
-          IR=I-1
-        ELSE
-          ISTACK(JSTACK)=I-1
-          ISTACK(JSTACK-1)=L
-          L=I+1
-        ENDIF
-      ENDIF
-      GO TO 10
-      END
-
