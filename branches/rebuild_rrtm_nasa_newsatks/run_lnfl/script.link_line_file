@@ -1,0 +1,5 @@
+#!/bin/tcsh
+
+ln -s /nas/project/rc/rc1/line_parameters_local_version/line_file/aer_v_3.3 TAPE1
+ln -s  /storm/rc2/malvarad/HITRAN2012_eval/hitran2012_f100/TAPE7_09_hit12.par_f100 TAPE2
+

@@ -1,0 +1,62 @@
+#
+
+OBJPATH = ../objdir
+
+SRCPATH = .
+
+VPATH = $(SRCPATH): $(OBJPATH)
+
+
+
+OBJ1 = \
+	kdis_2sort_l \
+	kdis_2sort_u \
+        kdis_2sort_planck \
+        kdis_2sort_for \
+        kdis_2sort_minor \
+        kdis_2sort_self 
+         
+
+OBJ2 = \
+	write_tape5 \
+	write_tape5_nc \
+	write_tape5_minor \
+
+OBJ3 = \
+	write_data_cont \
+	write_data_kminor \
+	write_data_multiple \
+	write_data_planck \
+        planck_int
+       
+
+
+all: makedir	$(OBJ1) $(OBJ2) $(OBJ3)  conclude
+
+planck_int: planck_int.f r1mach.o
+	pgf90  planck_int.f r1mach.o -o $(OBJPATH)/planck_int
+
+r1mach.o: r1mach.f
+	pgf90 -c -o r1mach.o r1mach.f
+
+$(OBJ2): std_atmos.f
+
+$(OBJ3): std_atmos.f
+
+$(OBJ1): std_atmos_kdis.f
+
+
+% :%.f 
+	pgf90  $< -o $(OBJPATH)/$@
+
+
+.SILENT:
+
+makedir :
+	if [ ! -d $(OBJPATH) ] ; \
+	then \
+	mkdir $(OBJPATH) ; \
+	fi
+
+conclude:
+	rm *.o

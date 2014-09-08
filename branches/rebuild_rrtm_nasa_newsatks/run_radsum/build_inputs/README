@@ -1,0 +1,9 @@
+4/17/14
+
+GARAND files from :/storm/rc1/profiles/garand/rrtm_lw_input/3ang.
+
+1 ~ tropical  (299K, 4.0cm PWV)
+6 ~ ustd      (288K, 1.2cm PWV)
+5 ~ saw       (257K, 0.41cm PWV)
+
+or in TAPE5 format from /storm/rc1/profiles/garand/lblrtm_input/tape5_10-3250_flx_hr

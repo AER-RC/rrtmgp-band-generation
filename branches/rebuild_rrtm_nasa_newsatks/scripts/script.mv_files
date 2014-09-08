@@ -1,0 +1,25 @@
+#!/bin/tcsh
+# script.mv_files
+# TCSH SCRIPT TO MOVE LBL/OD FILES 
+# REQUIRED INPUT
+# $1: mv or cp (will move or copy the files)
+# $2: Prefix of files to move/copy (ODint)
+# $3: Prefix of new file names (NCint)
+# NOTE: ASSUMES THE SEPARATOR IS A "_"
+# i.e. script.mv_odfiles mv ODint NCint
+
+# Set command for move or copy
+if ("$1" != "mv" && "$1" != "cp") then
+  echo 'mv or cp not specified; setting to cp'
+  set cmd="cp"
+else
+  set cmd="$1"
+endif
+
+foreach file ($2*)
+  set fext=`echo $file | awk '{split($0,a,"_"); print a[2]}'` 
+  echo "EXECUTING: $cmd $file $3_$fext"
+  $cmd $file $3_$fext
+end
+echo Finished $cmd
+exit
