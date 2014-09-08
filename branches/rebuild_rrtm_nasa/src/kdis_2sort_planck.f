@@ -63,7 +63,7 @@ C***************************************************
       
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,
      &               IGAS1_U,IGAS2_U,igas_minor_l,igas_minor_u,nmol
-      namelist /igaspar/ igas_on,iatmtype
+      namelist /igaspar/ igas_on
       namelist /iplanck/ isortplanck
 
       data igas_on/0/
