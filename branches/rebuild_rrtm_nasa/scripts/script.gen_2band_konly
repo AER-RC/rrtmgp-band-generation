@@ -1,26 +1,46 @@
 #!/bin/tcsh
+#Modified: Jennifer Delamere, Aug 2014 
+#Project: RRTM LW REBUILD FOR NASA
 #Created: Jennifer Delamere January 1999
-#INPUT: Type script.gen_2band DIRNAME where DIRNAME is the name of the
-#directory you want to create to store all the output.
-#NAMELIST NEEDED: Call it 'input_param'
 
-#Source input set of codes; set up lbl,tape3,scriptdirs,etc
-source input_codes
+#DESCRIPTION:
+#  Script to calculate k-distributions for key and minor species;
+#  upper and lower atmosphere for RRTM.
+
+#INPUT:
+#  DIRNAME ($1): name of the directory you want to create to store all output
+#  i.e. script.gen_2band_konly build_gb5
+#  INPUT CODE FILENAME ($2): Name of file that contains environment variables to be
+#  INPUT PARAM FILENAME ($3): Name of namelist file that describes the bands
+#  used in these scripts. 
 
 #Create a directory for the band you are interested in
 mkdir $1
 echo Create Directory: $1
 
-#Copy NAMELIST (used by f90 codes) file to the directories that need it.
-\cp input_param $1/. 
-\cp input_codes $1/.
+#Copy files to the directories that need it.
+\cp $2 $1/input_codes
+\cp $3 $1/input_param
+
+#Source input set of codes; set up lbl,tape3,scriptdirs,etc
+source $2
 
 #Now commence work in the new band directory
 cd $1
 
-#Get a copy of TAPE3 for lblrtm_f90 run
-\ln -s ${lblver} lblrtm_f90
-\ln -s ${t3ver} TAPE3
+#Create file that contains some information output
+echo START TIME: `date` > build_info.txt
+
+echo LBLRTM_VERSION: ${lblver} >> build_info.txt
+echo LINEFILE_VERSION: ${t3dir}/TAPE3 >> build_info.txt
+echo SCRIPTDIRECTORY: ${scriptdir} >> build_info.txt
+echo SCRIPT SVN INFO: >> build_info.txt
+echo `svn info ${scriptdir}` >> build_info.txt
+
+#Create a link for TAPE3 for lblrtm_f90 run
+\ln ${lblver} lblrtm_f90
+\ln -s ${t3dir}/TAPE3 TAPE3
+\cp ${t3dir}/TAPE6 tape3_info.txt
 \cp ${scriptdir}/PRESSURE.PROFILE .
 
 echo Writing TAPE5s
@@ -73,7 +93,7 @@ while ($jl < 10)
         lblrtm_f90
 #LBLRTM_F90 generates ODint_ files for each layer. Move
 #these to another filename
-	${scriptdir}/script.mv_files 13 ODint_ NCint_
+	${scriptdir}/script.mv_files mv ODint NCint
 #Run LBLRTM_F90 with all the absorbers including continua except WV.
 	\rm TAPE5
 	\cp ${tape5od} TAPE5
@@ -84,7 +104,7 @@ while ($jl < 10)
         \mv -f CK_ABS.DAT ${kgfile}
 
 	if ($i == 3) then
-	    ${scriptdir}/script.mv_files 13 ODint_ ODtmp_
+	    ${scriptdir}/script.mv_files mv ODint ODtmp
 	    @ k=1
 	    while ($k < 8)
 		if (-e "tape5nc-minor0"$k"-T03") then
@@ -95,8 +115,8 @@ while ($jl < 10)
 		set kgminor =  KG-minor0$k-T0${k1}-n0${jl}
 		\cp ${tape5minor} TAPE5
 		lblrtm_f90
-		${scriptdir}/script.mv_files 13 ODint_ NCint_
-		${scriptdir}/script.cp_files 13 ODtmp_ ODint_
+		${scriptdir}/script.mv_files mv ODint NCint
+		${scriptdir}/script.mv_files cp ODtmp ODint
  		\rm input_minor
 		echo " &igaspar igas_on="$k" iatmtype=1/" > tmp
 		cat input_param tmp > input_minor
@@ -153,7 +173,7 @@ while ($ju < 10)
         \rm TAPE5
 	\cp ${tape5nc} TAPE5
 	lblrtm_f90
-	${scriptdir}/script.mv_files 47 ODint_ NCint_ 
+	${scriptdir}/script.mv_files mv ODint NCint 
 	\rm TAPE5
 	\cp ${tape5od} TAPE5
 	lblrtm_f90
@@ -161,7 +181,7 @@ while ($ju < 10)
 	\mv -f CK_ABS.DAT ${kgfile}
 
 	if ($i == 8) then
-	    ${scriptdir}/script.mv_files 47 ODint_ ODtmp_
+	    ${scriptdir}/script.mv_files mv ODint ODtmp
 	    @ k=1
 	    while ($k < 8)
 		if (-e "tape5nc-minor0"$k"-T08") then
@@ -172,9 +192,9 @@ while ($ju < 10)
 		set kgminor =  KG-minor0$k-T0${k1}-n0${ju}
 		\cp ${tape5minor} TAPE5
 		lblrtm_f90
-		${scriptdir}/script.mv_files 47 ODint_ NCint_
+		${scriptdir}/script.mv_files mv ODint NCint
 		\rm TAPE5
-		${scriptdir}/script.cp_files 47 ODtmp_ ODint_
+		${scriptdir}/script.mv_files cp ODtmp ODint
 		\rm input_minor
 		echo " &igaspar igas_on="$k" iatmtype=2/" > tmp
 		cat input_param tmp > input_minor
@@ -196,12 +216,12 @@ end
 
 echo 'Writing absorption coefficients to file'
 
-${exedir}/write_data_kminor < input_param
+#${exedir}/write_data_kminor < input_param
 ${exedir}/write_data_multiple < input_param
 
 echo Finish Absorption Coefficients
 
-
+echo FINISH TIME: `date` >> build_info.txt
 
 
 
