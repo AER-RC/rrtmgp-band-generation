@@ -103,33 +103,42 @@ while ($jl < 10)
 #to reference file
         \mv -f CK_ABS.DAT ${kgfile}
 
-	if ($i == 3) then
-	    ${scriptdir}/script.mv_files mv ODint ODtmp
-	    @ k=1
-	    while ($k < 8)
-		if (-e "tape5nc-minor0"$k"-T03") then
-		echo Calculating Minor Gas ${k}
-		@ k1 = 2
-		while (${k1} < 4) 
-		set tape5minor = tape5nc-minor0${k}-T0${k1}
-		set kgminor =  KG-minor0$k-T0${k1}-n0${jl}
-		\cp ${tape5minor} TAPE5
-		lblrtm_f90
-		${scriptdir}/script.mv_files mv ODint NCint
-		${scriptdir}/script.mv_files cp ODtmp ODint
- 		\rm input_minor
-		echo " &igaspar igas_on="$k" iatmtype=1/" > tmp
-		cat input_param tmp > input_minor
-		\rm tmp
-		${exedir}/kdis_2sort_minor < input_minor
-	 	\mv -f CK_ABS_MINOR.DAT ${kgminor}		
-		@ k1++
-		end
-		endif
-		@ k++
-	    end	
+#	if ($i == 3) then
+#	    ${scriptdir}/script.mv_files mv ODint ODtmp
+#	    @ k=1
+#	    while ($k < 8)
+#		if (-e "tape5nc-minor0"$k"-T03") then
+#		echo Calculating Minor Gas ${k}
+#		@ k1 = 2
+#		while (${k1} < 4) 
+#		set tape5minor = tape5nc-minor0${k}-T0${k1}
+#		set kgminor =  KG-minor0$k-T0${k1}-n0${jl}
+#		\cp ${tape5minor} TAPE5
+#		lblrtm_f90
+#		${scriptdir}/script.mv_files mv ODint NCint
+#		${scriptdir}/script.mv_files cp ODtmp ODint
+# 		\rm input_minor
+#		echo " &igaspar igas_on="$k" iatmtype=1/" > tmp
+#		cat input_param tmp > input_minor
+#		\rm tmp
+#		${exedir}/kdis_2sort_minor < input_minor
+#	 	\mv -f CK_ABS_MINOR.DAT ${kgminor}		
+#		@ k1++
+#		end
+#		endif
+#		@ k++
+#	    end	
+#	endif
+	if ($icalcplanck == 1 && $i == 3) then 
+	    echo Calculation planck fractions for lower amosphere
+	    set kgfile_planck = KG_bbp1_n0${jl}
+	    echo " &igaspar igas_on=1/" > tmp
+	    cat input_param tmp > input_param_planck
+	    ${exedir}/kdis_2sort_planck < input_param_planck
+	    \mv -f CK_ABS_PL.DAT ${kgfile_planck}
+	    \rm tmp
+	    \rm input_param_planck
 	endif
-
 	\rm OD*
         \rm NC*
 #Advance counter and run another reference TAPE5 file
@@ -156,7 +165,6 @@ else
     @ ju = 11
 endif
 
-
 while ($ju < 10)
     @ i=6
     while ($i < 11)
@@ -180,33 +188,44 @@ while ($ju < 10)
 	${exedir}/kdis_2sort_u < input_param
 	\mv -f CK_ABS.DAT ${kgfile}
 
-	if ($i == 8) then
-	    ${scriptdir}/script.mv_files mv ODint ODtmp
-	    @ k=1
-	    while ($k < 8)
-		if (-e "tape5nc-minor0"$k"-T08") then
-		echo Calculating Minor Gas ${k}
-		@ k1 = 7
-		while (${k1} < 9) 
-		set tape5minor = tape5nc-minor0${k}-T0${k1}
-		set kgminor =  KG-minor0$k-T0${k1}-n0${ju}
-		\cp ${tape5minor} TAPE5
-		lblrtm_f90
-		${scriptdir}/script.mv_files mv ODint NCint
-		\rm TAPE5
-		${scriptdir}/script.mv_files cp ODtmp ODint
-		\rm input_minor
-		echo " &igaspar igas_on="$k" iatmtype=2/" > tmp
-		cat input_param tmp > input_minor
-		\rm tmp
-		${exedir}/kdis_2sort_minor < input_minor
-	 	\mv -f CK_ABS_MINOR.DAT ${kgminor}		
-		@ k1++
-		end
-		endif
-		@ k++
-	    end	
-	endif
+        if ($icalcplanck == 1 && $i == 8) then
+	    echo Calculating Planck Fractions for upper atmosphere
+	    set kgfile_planck = KG_bbp2_n0${ju}
+	    echo " &igaspar igas_on=2/" > tmp
+	    cat input_param tmp > input_param_planck
+	    ${exedir}/kdis_2sort_planck < input_param_planck
+	    \mv -f CK_ABS_PL.DAT ${kgfile_planck}
+	    \rm tmp
+	    \rm input_param_planck
+        endif
+
+#	if ($i == 8) then
+#	    ${scriptdir}/script.mv_files mv ODint ODtmp
+#	    @ k=1
+#	    while ($k < 8)
+#		if (-e "tape5nc-minor0"$k"-T08") then
+#		echo Calculating Minor Gas ${k}
+#		@ k1 = 7
+#		while (${k1} < 9) 
+#		set tape5minor = tape5nc-minor0${k}-T0${k1}
+#		set kgminor =  KG-minor0$k-T0${k1}-n0${ju}
+#		\cp ${tape5minor} TAPE5
+#		lblrtm_f90
+#		${scriptdir}/script.mv_files mv ODint NCint
+#		\rm TAPE5
+#		${scriptdir}/script.mv_files cp ODtmp ODint
+#		\rm input_minor
+#		echo " &igaspar igas_on="$k" iatmtype=2/" > tmp
+#		cat input_param tmp > input_minor
+#		\rm tmp
+#		${exedir}/kdis_2sort_minor < input_minor
+#	 	\mv -f CK_ABS_MINOR.DAT ${kgminor}		
+#		@ k1++
+#		end
+#		endif
+#		@ k++
+#	    end	
+#	endif
 	\rm OD*
         \rm NC*
 	@ i++
@@ -218,6 +237,10 @@ echo 'Writing absorption coefficients to file'
 
 #${exedir}/write_data_kminor < input_param
 ${exedir}/write_data_multiple < input_param
+
+if ($icalcplanck == 1) then
+    ${exedir}/write_data_planck < input_param
+endif
 
 echo Finish Absorption Coefficients
 
