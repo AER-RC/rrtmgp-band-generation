@@ -33,7 +33,7 @@ C***************************************************
       DIMENSION PRESS(0:MXL),T0(MXL),ALT(0:MXL)
       DIMENSION ALTREF(MXREF),PREF(MXREF),TREF(MXREF)
       DIMENSION AMOL(MXMOL,MXREF)
-      DIMENSION RHOTOT(MXL),W(mxmol,mxl),W_orig(mxmol,mxl)
+      DIMENSION W(mxmol,mxl),W_orig(mxmol,mxl)
       DIMENSION ETA(9),ICN(2)
       DIMENSION WVN_LCOUPLE(10)
       integer igas_minor_l(mxmol,1),igas_minor_u(mxmol,1)
@@ -174,7 +174,6 @@ C     Interpolate in ln(pressure).
                GO TO 900
             ENDIF
          ENDIF
-         RHOTOT(LEV) = RHOFAC*P/(BOLTZ*T0(LEV))
  1000 CONTINUE
       CLOSE(10)
 
@@ -201,8 +200,9 @@ c     with one major gas.
      &           'MIDLATITUDE SUMM H1=   0.00 ',
      &           'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
             TEMP = T0(1) + ITEMP*DELTAT
-            WATER = W(1,1)*RHOTOT(1)/(1.+W(1,1))
-            RHODRY = RHOTOT(1)-WATER
+            RHOTOT = RHOFAC*PRESS(1)/(BOLTZ*TEMP)
+            WATER = W(1,1)*RHOTOT/(1.+W(1,1))
+            RHODRY = RHOTOT-WATER
             WRITE(20,9023) PRESS(1),TEMP,IPTHAK
             BROAD=RHODRY*1.E5*(1-sum(W(2:nmol,1)))
             WRITE(20,9015)W(1:7,1),BROAD
@@ -211,8 +211,9 @@ c     with one major gas.
             endif
             DO 2000 LEV = 2, LEVDUP
                TEMP = T0(LEV) + ITEMP*DELTAT
-               WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
-               RHODRY = RHOTOT(LEV)-WATER
+               RHOTOT = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
+               WATER = W(1,LEV)*RHOTOT/(1.+W(1,LEV))
+               RHODRY = RHOTOT-WATER
                WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
                BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
 	       WRITE(20,9015)W(1:7,LEV),BROAD
@@ -263,8 +264,9 @@ c               WRITE(20,101)
      &              'MIDLATITUDE SUMM H1=   0.00 ',
      &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
                TEMP = T0(1) + ITEMP*DELTAT
-               WATER = W(1,1)*RHOTOT(1)/(1.+W(1,1))
-               RHODRY = RHOTOT(1)-WATER
+               RHOTOT = RHOFAC*PRESS(1)/(BOLTZ*TEMP)
+               WATER = W(1,1)*RHOTOT/(1.+W(1,1))
+               RHODRY = RHOTOT-WATER
                WRITE(20,9023) PRESS(1),TEMP,IPTHAK
                BROAD=RHODRY*1.E5*(1-sum(W(2:nmol,1)))
 	       WRITE(20,9015)W(1:7,1),BROAD
@@ -273,8 +275,9 @@ c               WRITE(20,101)
 	       endif
                DO 3000 LEV = 2, LEVDUP
                   TEMP = T0(LEV) + ITEMP*DELTAT
-                  WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
-                  RHODRY = RHOTOT(LEV)-WATER
+        	  RHOTOT = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
+                  WATER = W(1,LEV)*RHOTOT/(1.+W(1,LEV))
+                  RHODRY = RHOTOT-WATER
                   WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
                   BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
 		  WRITE(20,9015)W(1:7,LEV),BROAD
@@ -312,8 +315,9 @@ c            WRITE(20,101)
      &           'MIDLATITUDE SUMM H1=   0.00 ',
      &           'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
             TEMP = T0(LEVDUP) + ITEMP*DELTAT
-            WATER = W(1,LEVDUP)*RHOTOT(LEVDUP)/(1.+W(1,LEVDUP))
-            RHODRY = RHOTOT(LEVDUP)-WATER
+            RHOTOT = RHOFAC*PRESS(LEVDUP)/(BOLTZ*TEMP)
+            WATER = W(1,LEVDUP)*RHOTOT/(1.+W(1,LEVDUP))
+            RHODRY = RHOTOT-WATER
             WRITE(20,9023) PRESS(LEVDUP),TEMP,IPTHAK
             BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEVDUP)))
 	    WRITE(20,9015)W(1:7,levdup),BROAD
@@ -322,8 +326,9 @@ c            WRITE(20,101)
 	    endif
             DO 4000 LEV = LEVDUP+1, NLEV
                TEMP = T0(LEV) + ITEMP*DELTAT
-               WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
-               RHODRY = RHOTOT(LEV)-WATER
+       	       RHOTOT = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
+               WATER = W(1,LEV)*RHOTOT/(1.+W(1,LEV))
+               RHODRY = RHOTOT-WATER
                WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
                BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
 	       WRITE(20,9015)W(1:7,lev),BROAD
@@ -375,8 +380,9 @@ c               WRITE(20,101)
      &              'MIDLATITUDE SUMM H1=   0.00 ',
      &              'H2= 70.00   ', 'ANG=   0.000  LEN= 0 '
                TEMP = T0(LEVDUP) + ITEMP*DELTAT
-               WATER = W(1,LEVDUP)*RHOTOT(LEVDUP)/(1.+W(1,LEVDUP))
-               RHODRY = RHOTOT(LEVDUP)-WATER
+               RHOTOT = RHOFAC*PRESS(LEVDUP)/(BOLTZ*TEMP)
+               WATER = W(1,LEVDUP)*RHOTOT/(1.+W(1,LEVDUP))
+               RHODRY = RHOTOT-WATER
                WRITE(20,9023) PRESS(LEVDUP),TEMP,IPTHAK
 	       BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEVDUP)))
 	       WRITE(20,9015)W(1:7,levdup),BROAD
@@ -385,8 +391,9 @@ c               WRITE(20,101)
 	       endif
                DO 5000 LEV = LEVDUP+1, NLEV
                   TEMP = T0(LEV) + ITEMP*DELTAT
-                  WATER = W(1,LEV)*RHOTOT(LEV)/(1.+W(1,LEV))
-                  RHODRY = RHOTOT(LEV)-WATER
+        	  RHOTOT = RHOFAC*PRESS(LEV)/(BOLTZ*TEMP)
+                  WATER = W(1,LEV)*RHOTOT/(1.+W(1,LEV))
+                  RHODRY = RHOTOT-WATER
                   WRITE (20,9014) PRESS(LEV),TEMP,IPTHAK
 		  BROAD = RHODRY*1.E5*(1.-sum(W(2:nmol,LEV)))
 		  WRITE(20,9015)W(1:7,lev),BROAD
