@@ -34,7 +34,7 @@ c     factor used to help ease of computing.
 c     ABSCOEF = CONTAVG(IG)*COLUMFAC or 
 c                            CONTAVG(IG)*1.e20/Column amount
 C***************************************************
-      PARAMETER (NLINES=5000000,MLAYERS=47,MG=16)
+      PARAMETER (NLINES=15000000,MLAYERS=47,MG=16)
       PARAMETER (MXMOL=9)
 
       IMPLICIT DOUBLE PRECISION (V)
@@ -63,7 +63,7 @@ C***************************************************
       
       NAMELIST /PAR/ WAVENUMBER1,WAVENUMBER2,IGAS1_L,IGAS2_L,
      &               IGAS1_U,IGAS2_U,igas_minor_l,igas_minor_u,nmol
-      namelist /igaspar/ igas_on,iatmtype
+      namelist /igaspar/ igas_on
       namelist /iplanck/ isortplanck
 
       data igas_on/0/

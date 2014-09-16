@@ -34,7 +34,7 @@ c     factor used to help ease of computing.
 c     ABSCOEF = CONTAVG(IG)*COLUMFAC or 
 c                            CONTAVG(IG)*1.e20/Column amount
 C***************************************************
-      PARAMETER (NLINES=5000000,MLAYERS=47,MG=16)
+      PARAMETER (NLINES=15000000,MLAYERS=47,MG=16)
       PARAMETER (MXMOL=9)
 
       IMPLICIT DOUBLE PRECISION (V)
