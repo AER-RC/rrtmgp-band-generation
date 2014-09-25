@@ -5,7 +5,30 @@ module useful_constants
   real, parameter :: avogad=6.022045e+23,wtwat=18.015
   real, parameter :: c1=18.9766,c2=-14.9595,c3=-2.4388
   real, parameter :: b=avogad/wtwat
-  
+
+  ! PARAMETER DECLARATIONS
+  integer, parameter :: mxmol=9, mxl=200, mxref = 50
+  integer, parameter :: ntpts=5,neta=9
+  integer, parameter :: ipthak=3
+  real, parameter :: deltatint=15.0, overthresh = 1.05
+
+  ! Data declarations
+  character(len=20) :: fnum(99),nnum(9)
+  real, dimension(neta) :: ETA
+    
+  data eta/0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0/
+  data nnum/'01','02','03','04','05','06','07','08','09'/
+  data fnum/'01','02','03','04','05','06','07','08','09', &
+    '10','11','12','13','14','15','16','17','18','19', &
+    '20','21','22','23','24','25','26','27','28','29', &
+    '30','31','32','33','34','35','36','37','38','39', &
+    '40','41','42','43','44','45','46','47','48','49', &
+    '50','51','52','53','54','55','56','57','58','59', &
+    '60','61','62','63','64','65','66','67','68','69', &
+    '70','71','72','73','74','75','76','77','78','79', &
+    '80','81','82','83','84','85','86','87','88','89', &
+    '90','91','92','93','94','95','96','97','98','99' / 
+    
 end module
 
 program write_tape5s
@@ -38,8 +61,8 @@ program write_tape5s
       real, intent(out) :: dvout
     end subroutine compute_wavenumber
 
-    subroutine setup_continuum(neta,ig1,ig2,xcmapper,xcmappee)
-      integer, intent(in) :: neta,ig1,ig2
+    subroutine setup_continuum(ig1,ig2,xcmapper,xcmappee)
+      integer, intent(in) :: ig1,ig2
       real, dimension(7,neta), intent(out) :: xcmapper,xcmappee     
     end subroutine setup_continuum
 
@@ -50,15 +73,10 @@ program write_tape5s
       real, intent(in) :: wavenumber1, wavenumber2, dvout
     end subroutine write_t5hdr
   end interface
-  
-  ! PARAMETER DECLARATIONS
-  integer, parameter :: mxmol=9, mxl=200, mxref = 50
-  integer, parameter :: ntpts=5,neta=9
-  integer, parameter :: ipthak=3
-  real, parameter :: deltatint=15.0, overthresh = 1.05
+
 
   ! cHARACTER DECLARATIONS
-  character(len=20) :: fnum(99),nnum(9), rec_2_1_lo, rec_2_1_hi
+  character(len=20) :: rec_2_1_lo, rec_2_1_hi
   character(len=50) :: tape5
 
   ! INTEGER DECLARATION
@@ -76,7 +94,6 @@ program write_tape5s
   real :: wavenumber1, wavenumber2, dvout
   real :: p,frac
   real :: dennum,denrat,densat,densatover,wsat,wsatover,wetahigh,wtst
-  real, dimension(neta) :: eta
   real, dimension(mxref) :: pref,tref
   real, dimension(mxmol,mxref) :: amol
   real, dimension(mxl) :: press,rh,t0
@@ -84,21 +101,6 @@ program write_tape5s
   real, dimension(mxmol,mxl) :: w_orig
   real, dimension(mxmol,mxl,ntpts,neta) :: wmol,wmoltwo,wmapper,wmappee,wmappertwo,wmappeetwo
   real, dimension(ntpts) :: deltat
-  
-  data eta/0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0/
-
-  data nnum/'01','02','03','04','05','06','07','08','09'/
-
-  data fnum/'01','02','03','04','05','06','07','08','09', &
-    '10','11','12','13','14','15','16','17','18','19', &
-    '20','21','22','23','24','25','26','27','28','29', &
-    '30','31','32','33','34','35','36','37','38','39', &
-    '40','41','42','43','44','45','46','47','48','49', &
-    '50','51','52','53','54','55','56','57','58','59', &
-    '60','61','62','63','64','65','66','67','68','69', &
-    '70','71','72','73','74','75','76','77','78','79', &
-    '80','81','82','83','84','85','86','87','88','89', &
-    '90','91','92','93','94','95','96','97','98','99' / 
   
   namelist /par/ wavenumber1,wavenumber2,igas1_l,igas2_l,igas1_u, &
     igas2_u,igas_minor_l,igas_minor_u,nmol 
@@ -179,8 +181,8 @@ program write_tape5s
   write(rec_2_1_hi,'(" 1 ",(i2),(i2),"   1.000000  ")') nlev-levdup(1)+1,nmol  
 
   ! Setup continuum - lower and upper
-  call setup_continuum(neta,igas1_l,igas2_l,xlcmapper,xlcmappee)
-  call setup_continuum(neta,igas1_u,igas2_u,xucmapper,xucmappee)
+  call setup_continuum(igas1_l,igas2_l,xlcmapper,xlcmappee)
+  call setup_continuum(igas1_u,igas2_u,xucmapper,xucmappee)
   
   if (igas2_l .ne. 0 .and. igas2_l .eq. 0) then
   ! LOWER ATMOSPHERE, ONE KEY SPECIES
@@ -536,10 +538,11 @@ subroutine compute_wavenumber(wavenumber1,wavenumber2,dvout)
     endif
 end subroutine compute_wavenumber
 
-subroutine setup_continuum(neta,ig1,ig2,xcmapper,xcmappee)
+subroutine setup_continuum(ig1,ig2,xcmapper,xcmappee)
+  use useful_constants
   implicit none
   
-  integer, intent(in) :: neta,ig1,ig2
+  integer, intent(in) :: ig1,ig2
   real, dimension(7,neta), intent(out) :: xcmapper,xcmappee
 
   ! NOTE: When there is one key species, it is equivalent to the case for
@@ -557,7 +560,7 @@ subroutine setup_continuum(neta,ig1,ig2,xcmapper,xcmappee)
     xcmappee=-99.0
   end if 
 
-  select case (igas1_l)
+  select case (ig1)
     case (1)
       ! H2O, Turn off WV continuum for eta=1 case
       xcmapper(1:2,1) = 0.0
@@ -584,7 +587,7 @@ subroutine setup_continuum(neta,ig1,ig2,xcmapper,xcmappee)
       xcmappee(5,2:neta) = 1.0      
   end select
   
-  select case (igas2_l)
+  select case (ig2)
     case (1)
       ! H2O, Turn off WV continuum for eta=9 case
       xcmapper(1:2,9) = 0.0
