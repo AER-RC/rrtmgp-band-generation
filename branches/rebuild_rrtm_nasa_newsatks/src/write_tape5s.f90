@@ -38,6 +38,11 @@ program write_tape5s
       real, intent(out) :: dvout
     end subroutine compute_wavenumber
 
+    subroutine setup_continuum(neta,ig1,ig2,xcmapper,xcmappee)
+      integer, intent(in) :: neta,ig1,ig2
+      real, dimension(7,neta), intent(out) :: xcmapper,xcmappee     
+    end subroutine setup_continuum
+
     subroutine write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xcont,reclayerinfo)
       character(len=20), intent(in) :: reclayerinfo
       integer, intent(in) :: iunit
@@ -48,8 +53,9 @@ program write_tape5s
   
   ! PARAMETER DECLARATIONS
   integer, parameter :: mxmol=9, mxl=200, mxref = 50
+  integer, parameter :: ntpts=5,neta=9
   integer, parameter :: ipthak=3
-  real, parameter :: deltatint=15.0,ntpts=5
+  real, parameter :: deltatint=15.0, overthresh = 1.05
 
   ! cHARACTER DECLARATIONS
   character(len=20) :: fnum(99),nnum(9), rec_2_1_lo, rec_2_1_hi
@@ -57,28 +63,27 @@ program write_tape5s
 
   ! INTEGER DECLARATION
   integer igas1_l,igas2_l,igas1_u,igas2_u,nmol
-  integer iwvn
+  integer iwvn,imol,im
   integer ilev,nlev,levdup(1),levlow(1),iref
-  integer im
-  integer index,itemp
+  integer index,index2,itemp,ieta
   integer iunit
   integer ndelt
   integer, dimension(mxmol,1) :: igas_minor_l,igas_minor_u
-  real, dimension(7) :: xlcmapper,xucmapper,xlcmappee,xucmappee
+  real, dimension(7,neta) :: xlcmapper,xucmapper,xlcmappee,xucmappee
 
   ! REAL DECLARATIONS 
-  real :: junk
+
   real :: wavenumber1, wavenumber2, dvout
-  real :: p,frac,dennum
-  real, dimension(9) :: eta
+  real :: p,frac
+  real :: dennum,denrat,densat,densatover,wsat,wsatover,wetahigh,wtst
+  real, dimension(neta) :: eta
   real, dimension(mxref) :: pref,tref
   real, dimension(mxmol,mxref) :: amol
   real, dimension(mxl) :: press,rh,t0
   real, dimension(mxl,ntpts) :: temp
   real, dimension(mxmol,mxl) :: w_orig
-  real, dimension(mxmol,mxl,ntpts) :: wmol,wmapper,wmappee
+  real, dimension(mxmol,mxl,ntpts,neta) :: wmol,wmoltwo,wmapper,wmappee,wmappertwo,wmappeetwo
   real, dimension(ntpts) :: deltat
-
   
   data eta/0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0/
 
@@ -94,10 +99,6 @@ program write_tape5s
     '70','71','72','73','74','75','76','77','78','79', &
     '80','81','82','83','84','85','86','87','88','89', &
     '90','91','92','93','94','95','96','97','98','99' / 
-
-  ! Set continuum for mapper, this does not change for upper or lower atmosphere.
-  data xlcmapper /1.0,1.0,1.0,1.0,1.0,1.0,0.0/
-  data xucmapper /1.0,1.0,1.0,1.0,1.0,1.0,0.0/
   
   namelist /par/ wavenumber1,wavenumber2,igas1_l,igas2_l,igas1_u, &
     igas2_u,igas_minor_l,igas_minor_u,nmol 
@@ -156,37 +157,33 @@ program write_tape5s
     rh(ilev) = vmrtoden(p,t0(ilev),w_orig(1,ilev))/satden(t0(ilev))
 
     ! Expand the gases to be a function of temperature
+    !! Deal now with one key species
     do itemp=1,ntpts 
       temp(ilev,itemp)=t0(ilev)+deltat(itemp)
       ! Continue modification to profile by requiring each temperature regime to have a wv
       ! equivalent to the standard level temperature rh.
       dennum = rh(ilev)*satden(temp(ilev,itemp))
-      wmol(1,ilev,itemp)=dentovmr(p,temp(ilev,itemp),dennum)            
+      ! When one key species (wmol), adjust the water vapor
+      wmol(1,ilev,itemp,neta)=dentovmr(p,temp(ilev,itemp),dennum)            
       ! Set other molecules to orig
-      wmol(2:nmol,ilev,itemp) = w_orig(2:nmol,ilev)
+      wmol(2:nmol,ilev,itemp,neta) = w_orig(2:nmol,ilev)  
+      ! Also set up necessary seeds for two key species 
+      wmoltwo(1:nmol,ilev,itemp,neta) = w_orig(1:nmol,ilev)
     enddo 
 
   enddo 
-
 
   ! Set up additional tape5 info
   nmol = 7
   write(rec_2_1_lo,'(" 1 ",(i2),(i2),"   1.000000  ")') levdup(1),nmol
   write(rec_2_1_hi,'(" 1 ",(i2),(i2),"   1.000000  ")') nlev-levdup(1)+1,nmol  
 
-  if (igas2_l .eq. 0) then
-
-    ! Handle the continuum designation for mappee tape5
-    xlcmappee=0.0
-    select case (igas1_l)
-      case (2)
-        xlcmappee(3) = 1.0 !CO2
-      case (3)
-        xlcmappee(4) = 1.0 !O3
-      case (7)
-        xlcmappee(5) = 1.0 !O2
-    end select
-
+  ! Setup continuum - lower and upper
+  call setup_continuum(neta,igas1_l,igas2_l,xlcmapper,xlcmappee)
+  call setup_continuum(neta,igas1_u,igas2_u,xucmapper,xucmappee)
+  
+  if (igas2_l .ne. 0 .and. igas2_l .eq. 0) then
+  ! LOWER ATMOSPHERE, ONE KEY SPECIES
     ! Handling the mapper tape5
     index = 1
     wmapper = wmol
@@ -194,51 +191,151 @@ program write_tape5s
       tape5 = 'tape5-T'//trim(fnum(index))//'-n09'
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
-      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmapper,rec_2_1_lo)      
+      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmapper(1:7,neta),rec_2_1_lo)      
       do ilev=1,levdup(1)
         write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-        write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp),broad(press(ilev),temp(ilev,itemp),&
-          wmapper(1:7,ilev,itemp))
+        write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,neta),broad(press(ilev),&
+          temp(ilev,itemp),wmapper(1:7,ilev,itemp,neta))
       enddo
       close(iunit)
       index=index+1
     enddo  
         
-    ! Handling the mappee tape5
     index = 1
     wmappee = 0.0 
     do itemp = 1,ntpts
-      wmappee(igas1_l,1:nlev,itemp)=wmol(igas1_l,1:nlev,itemp)
+      wmappee(igas1_l,1:levdup(1),itemp,neta)=wmol(igas1_l,1:levdup(1),itemp,neta)
       tape5 = 'tape5nc-T'//trim(fnum(index))//'-n09'
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
-      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmappee,rec_2_1_lo)
+      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmappee(1:7,neta),rec_2_1_lo)
       do ilev=1,levdup(1)
         write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-        write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp),broad(press(ilev),temp(ilev,itemp),&
-          wmappee(1:7,ilev,itemp))
+        write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,neta),broad(press(ilev),&
+          temp(ilev,itemp),wmappee(1:7,ilev,itemp,neta))
       enddo
       close(iunit)
       index=index+1
     enddo  
         
-  endif
+  else if (igas2_l .ne. 0 .and. igas2_l .ne. 0) then
+  ! LOWER ATMOSPHERE, TWO KEY SPECIES    
+    if (igas1_l .ne. 1 .and. igas2_l .ne. 1) then
+      !! LOWER ATMOSPHERE, TWO KEY SPECIES, NEITHER IS WATER VAPOR
+      do ieta=1,neta
+        do itemp=1,ntpts
+          do ilev=1,levdup(1)
+            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
+            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
+            if (ieta .eq. 1) then 
+              wmappertwo(igas1_l,ilev,itemp,ieta) = 0.0
+              wmappeetwo(igas2_l,ilev,itemp,ieta) = wmappertwo(igas2_l,ilev,itemp,ieta)            
+            else if (ieta .eq. 9) then
+              wmappertwo(igas2_l,ilev,itemp,ieta) = 0.0
+              wmappeetwo(igas1_l,ilev,itemp,ieta) = wmoltwo(igas1_l,ilev,itemp,9)              
+            else
+              wmappertwo(igas1_l,ilev,itemp,ieta) = wmoltwo(igas1_l,ilev,itemp,ieta)* &
+              eta(ieta)/(1.0-eta(ieta))
+              wmappeetwo(igas1_l,ilev,itemp,ieta) = wmappertwo(igas1_l,ilev,itemp,ieta)
+              wmappeetwo(igas2_l,ilev,itemp,ieta) = wmappertwo(igas2_l,ilev,itemp,ieta)                             
+            end if    
+          enddo
+        end do
+      end do
+    else if (igas1_l .eq. 1) then
+      !! LOWER ATMOSPHERE, TWO KEY SPECIES, ONE IS WATER VAPOR
+      do ilev=1,levdup(1)
+        ! WARNING: BE CAREFUL TO CHANGE THIS AS NEEDED
+        wetahigh=wmoltwo(1,ilev,1,9)*(0.99/(1.0-0.99))
+        do itemp=1,ntpts
+          densat = satden(temp(ilev,itemp))
+          densatover = overthresh*densat
+          wsat = dentovmr(press(ilev),temp(ilev,itemp),densat)
+          wsatover = dentovmr(press(ilev),temp(ilev,itemp),densatover)
+          do ieta=1,neta
+            ! Set all gases to their standard, normal values
+            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
+            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
+            if (ieta .eq. 1) then
+              ! Set WV (igas1_l) to 0; leave other key species as normal 
+              wmappertwo(1,ilev,itemp,ieta) = 0.0
+              wmappeetwo(1,ilev,itemp,ieta) = 0.0
+            else if (ieta .eq. 9) then
+              dennum=vmrtoden(press(ilev),temp(ilev,itemp),wetahigh)
+              denrat = dennum/densat
+              if (denrat .gt. overthresh) then
+                wmappertwo(1,ilev,itemp,ieta) = wsatover
+              endif             
+              wmappertwo(igas2_l,ilev,itemp,ieta) = 0.0
+              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
+            else
+              wtst = wmappertwo(1,ilev,itemp,ieta)* &
+                eta(ieta)/(1.0-eta(ieta))
+              dennum = vmrtoden(press(ilev),temp(ilev,itemp),wtst)
+              denrat = dennum/densat
+              if (denrat .gt. overthresh) then
+                ! Readjust the second key species now that we have to adjust water vapor.
+                wmappertwo(2,ilev,itemp,ieta) = &
+                  ((1.0-eta(ieta))/eta(ieta))* &
+                  (wmappertwo(2,ilev,itemp,ieta)/ &
+                  wmappertwo(1,ilev,itemp,ieta))* &
+                  wsatover
+                  ! Set water vapor to the threshold saturation value.
+                wmappertwo(1,ilev,itemp,ieta) = wsatover   
+              else
+                wmappertwo(1,ilev,itemp,ieta) = wtst
+              endif 
+              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
+              wmappeetwo(2,ilev,itemp,ieta) = wmappertwo(2,ilev,itemp,ieta)                    
+            end if    
+          enddo
+        end do
+      end do     
+    else
+      print*,'WARNING: igas1_l ne 1, not allowed'
+    endif
+    
+    ! LOWER ATMOSPHERE, TWO KEY SPECIES
+      ! Handling the mapper tape5
+      do ieta = 1,9
+        index = 1
+        do itemp = 1,ntpts
+          tape5 = 'tape5-T'//trim(fnum(index))//'-n'//trim(fnum(ieta))
+          iunit=20
+          open(iunit,FILE=tape5,FORM='FORMATTED')
+          call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmapper(1:7,ieta),rec_2_1_lo)      
+          do ilev=1,levdup(1)
+            write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+            write(iunit,'(1P,8G15.7,0P)') wmappertwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmappertwo(1:7,ilev,itemp,ieta))
+          enddo
+          close(iunit)
+          index=index+1
+        enddo 
+      enddo
+      
+      do ieta = 1,9
+        index = 1
+        do itemp = 1,ntpts
+          tape5 = 'tape5nc-T'//trim(fnum(index))//'-n'//trim(fnum(ieta))
+          iunit=20
+          open(iunit,FILE=tape5,FORM='FORMATTED')
+          call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmappee(1:7,ieta),rec_2_1_lo)      
+          do ilev=1,levdup(1)
+            write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+            write(iunit,'(1P,8G15.7,0P)') wmappeetwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmappeetwo(1:7,ilev,itemp,ieta))
+          enddo
+          close(iunit)
+          index=index+1
+        enddo 
+      enddo
+  end if
 
-  ! UPPER ATMOSPHERE
+  !!! UPPER ATMOSPHERE
 
-  if (igas2_u .eq. 0) then
-
-    ! Handle the continuum designation for mappee tape5
-    xlcmappee=0.0
-    select case (igas1_u)
-      case (2)
-        xlcmappee(3) = 1.0 !CO2
-      case (3)
-        xlcmappee(4) = 1.0 !O3
-      case (7)
-        xlcmappee(5) = 1.0 !O2
-    end select
-
+  if (igas2_u .ne. 0 .and. igas2_u .eq. 0) then
+  ! UPPER ATMOSPHERE, ONE KEY SPECIES
     ! Handling the mapper tape5
     index = ntpts+1
     wmapper = wmol
@@ -246,11 +343,11 @@ program write_tape5s
       tape5 = 'tape5-T'//trim(fnum(index))//'-n09'
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
-      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmapper,rec_2_1_lo)      
+      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmapper(1:7,9),rec_2_1_hi)      
       do ilev=levdup(1),nlev
         write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-        write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp),broad(press(ilev),temp(ilev,itemp),&
-          wmapper(1:7,ilev,itemp))
+        write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,neta),broad(press(ilev),&
+          temp(ilev,itemp),wmapper(1:7,ilev,itemp,neta))
       enddo
       close(iunit)
       index=index+1
@@ -260,21 +357,137 @@ program write_tape5s
     index = ntpts+1
     wmappee = 0.0 
     do itemp = 1,ntpts
-      wmappee(igas1_l,1:nlev,itemp)=wmol(igas1_l,1:nlev,itemp)
+      wmappee(igas1_l,levdup(1):nlev,itemp,neta)=wmol(igas1_l,levdup(1):nlev,itemp,neta)
       tape5 = 'tape5nc-T'//trim(fnum(index))//'-n09'
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
-      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmappee,rec_2_1_lo)
+      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmappee(1:7,9),rec_2_1_hi)
       do ilev=levdup(1),nlev
         write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-        write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp),broad(press(ilev),temp(ilev,itemp),&
-          wmappee(1:7,ilev,itemp))
+        write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,neta),broad(press(ilev),&
+          temp(ilev,itemp),wmappee(1:7,ilev,itemp,neta))
       enddo
       close(iunit)
       index=index+1
     enddo  
         
-  endif  
+  else if (igas2_u .ne. 0 .and. igas2_u .ne. 0) then
+
+    if (igas1_u .ne. 1 .and. igas2_u .ne. 1) then
+      !! UPPER ATMOSPHERE, TWO KEY SPECIES, NEITHER IS WATER VAPOR
+      print*,'HERE IN THIS LOOP',igas1_u,igas2_u,levdup(1)
+      do ieta=1,neta,2
+        do itemp=1,ntpts
+          do ilev=levdup(1),nlev
+            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
+            print*,'ILEV',wmappertwo(1:nmol,ilev,itemp,ieta)
+            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
+            if (ieta .eq. 1) then 
+              wmappertwo(igas1_u,ilev,itemp,ieta) = 0.0
+              wmappeetwo(igas2_u,ilev,itemp,ieta) = wmappertwo(igas2_u,ilev,itemp,ieta) 
+              print*,'ILEVINSIDE',wmappertwo(1:nmol,ilev,itemp,ieta)            
+            else if (ieta .eq. 9) then
+              wmappertwo(igas1_u,ilev,itemp,ieta) = wmappertwo(igas1_u,ilev,itemp,ieta) 
+              wmappeetwo(igas2_u,ilev,itemp,ieta) = 0.0  
+            else
+              wmappertwo(igas1_u,ilev,itemp,ieta) = wmoltwo(igas1_u,ilev,itemp,ieta)* &
+              eta(ieta)/(1.0-eta(ieta))
+              wmappeetwo(igas2_u,ilev,itemp,ieta) = wmappertwo(igas1_u,ilev,itemp,ieta)                           
+            end if    
+          enddo
+        end do
+      end do
+    else if (igas1_u .eq. 1) then
+      print*,'HERE? NO....'
+      !! LOWER ATMOSPHERE, TWO KEY SPECIES, ONE IS WATER VAPOR
+      do ilev=levdup(1),nlev
+        ! WARNING: BE CAREFUL TO CHANGE THIS AS NEEDED
+        wetahigh=wmoltwo(1,ilev,1,9)*(0.99/(1.0-0.99))
+        do itemp=1,ntpts
+          densat = satden(temp(ilev,itemp))
+          densatover = overthresh*densat
+          wsat = dentovmr(press(ilev),temp(ilev,itemp),densat)
+          wsatover = dentovmr(press(ilev),temp(ilev,itemp),densatover)
+          do ieta=1,neta,2
+            ! Set all gases to their standard, normal values
+            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
+            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
+            if (ieta .eq. 1) then
+              ! Set WV (igas1_l) to 0; leave other key species as normal 
+              wmappertwo(1,ilev,itemp,ieta) = 0.0
+              wmappeetwo(1,ilev,itemp,ieta) = 0.0
+            else if (ieta .eq. 9) then
+              dennum=vmrtoden(press(ilev),temp(ilev,itemp),wetahigh)
+              denrat = dennum/densat
+              if (denrat .gt. overthresh) then
+                wmappertwo(1,ilev,itemp,ieta) = wsatover
+              endif             
+              wmappertwo(igas2_u,ilev,itemp,ieta) = 0.0
+              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
+            else
+              wtst = wmappertwo(1,ilev,itemp,ieta)* &
+                eta(ieta)/(1.0-eta(ieta))
+              dennum = vmrtoden(press(ilev),temp(ilev,itemp),wtst)
+              denrat = dennum/densat
+              if (denrat .gt. overthresh) then
+                ! Readjust the second key species now that we have to adjust water vapor.
+                wmappertwo(2,ilev,itemp,ieta) = &
+                  ((1.0-eta(ieta))/eta(ieta))* &
+                  (wmappertwo(2,ilev,itemp,ieta)/ &
+                  wmappertwo(1,ilev,itemp,ieta))* &
+                  wsatover
+                  ! Set water vapor to the threshold saturation value.
+                wmappertwo(1,ilev,itemp,ieta) = wsatover   
+              else
+                wmappertwo(1,ilev,itemp,ieta) = wtst
+              endif 
+              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
+              wmappeetwo(2,ilev,itemp,ieta) = wmappertwo(2,ilev,itemp,ieta)                    
+            end if    
+          enddo
+        end do
+      end do  
+    end if
+  else
+    print*,'WARNING: Something wrong with upper atmosphere input'
+  end if 
+      ! UPPER ATMOSPHERE, TWO KEY SPECIES
+      ! Handling the mapper tape5
+      do ieta = 1,neta,2
+        index = 6
+        do itemp = 1,ntpts
+          tape5 = 'tape5-T'//trim(fnum(index))//'-n'//trim(fnum(ieta))
+          iunit=20
+          open(iunit,FILE=tape5,FORM='FORMATTED')
+          call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmapper(1:7,ieta),rec_2_1_lo)      
+          do ilev=1,levdup(1)
+            write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+            print*,'WRITING...',wmappertwo(1:7,ilev,itemp,ieta)
+            write(iunit,'(1P,8G15.7,0P)') wmappertwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmappertwo(1:7,ilev,itemp,ieta))
+          enddo
+          close(iunit)
+          index=index+1
+        enddo 
+      enddo
+      
+      do ieta = 1,neta,2
+        index = 6
+        do itemp = 1,ntpts
+          tape5 = 'tape5nc-T'//trim(fnum(index))//'-n'//trim(fnum(ieta))
+          iunit=20
+          open(iunit,FILE=tape5,FORM='FORMATTED')
+          call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmappee(1:7,ieta),rec_2_1_lo)      
+          do ilev=1,levdup(1)
+            write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+            write(iunit,'(1P,8G15.7,0P)') wmappeetwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmappeetwo(1:7,ilev,itemp,ieta))
+          enddo
+          close(iunit)
+          index=index+1
+        enddo 
+      enddo
+
 end
 
 subroutine compute_wavenumber(wavenumber1,wavenumber2,dvout)
@@ -323,6 +536,83 @@ subroutine compute_wavenumber(wavenumber1,wavenumber2,dvout)
     endif
 end subroutine compute_wavenumber
 
+subroutine setup_continuum(neta,ig1,ig2,xcmapper,xcmappee)
+  implicit none
+  
+  integer, intent(in) :: neta,ig1,ig2
+  real, dimension(7,neta), intent(out) :: xcmapper,xcmappee
+
+  ! NOTE: When there is one key species, it is equivalent to the case for
+  ! eta=9 with two key species.  For simplicity, we just fill the array as
+  ! if there were two key species even when there isn't, but those values
+  ! are not used.
+  xcmapper = 1.0
+  xcmapper(7,1:0) = 0.0 
+  xcmappee = 0.0
+  xcmappee(7,1:0) = 0.0 
+  
+  if (ig1 .eq. ig2) then
+    print*,'WARNING: BAND GASES CANNOT BE THE SAME'
+    xcmapper=-99.0
+    xcmappee=-99.0
+  end if 
+
+  select case (igas1_l)
+    case (1)
+      ! H2O, Turn off WV continuum for eta=1 case
+      xcmapper(1:2,1) = 0.0
+      ! H2O mappee continuum treated separately; contribution not
+      ! included in the ks.
+      xcmappee(1:2,2:neta) = 0.0
+    case (2)
+      ! CO2, Turn off CO2 mapper continuum for eta=1 case
+      xcmapper(3,1) = 0.0
+      ! CO2, Turn on CO2 mappee continuum as contribution
+      ! included in the ks
+      xcmappee(3,2:neta) = 1.0   
+    case (3)
+      ! O3, Turn off O3 mapper continuum for eta=1 case
+      xcmapper(4,1) = 0.0
+      ! O3, Turn on O3 mappee continuum as contribution
+      ! included in the ks
+      xcmappee(4,2:neta) = 1.0 
+    case (7)
+      ! O2, Turn off O2 mapper continuum for eta=1 case 
+      xcmapper(5,1) = 0.0
+      ! O2, Turn on O2 mappee continuum as contribution
+      ! included in the ks      
+      xcmappee(5,2:neta) = 1.0      
+  end select
+  
+  select case (igas2_l)
+    case (1)
+      ! H2O, Turn off WV continuum for eta=9 case
+      xcmapper(1:2,9) = 0.0
+      ! H2O mappee continuum treated separately; contribution not
+      ! included in the ks.      
+      xcmappee(1:2,1:neta-1) = 0.0
+    case (2)
+      ! CO2, Turn off CO2 mapper continuum for eta=9 case
+      xcmapper(3,9) = 0.0
+      ! CO2, Turn on CO2 mappee continuum as contribution
+      ! included in the ks      
+      xcmappee(3,1:neta-1) = 1.0   
+    case (3)
+      ! O3, Turn off O3 mapper continuum for eta=9 case
+      xcmapper(4,9) = 0.0
+      ! O3, Turn on O3 mappee continuum as contribution
+      ! included in the ks
+      xcmappee(4,1:neta-1) = 1.0 
+    case (7)
+      ! O2, Turn off O2 mapper continuum for eta=1 case 
+      xcmapper(5,9) = 0.0
+      ! O2, Turn on O2 mappee continuum as contribution
+      ! included in the ks  
+      xcmappee(5,1:neta-1) = 1.0      
+  end select
+  
+end subroutine setup_continuum
+
 subroutine write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xcont,reclayerinfo)
   implicit none
 
@@ -342,8 +632,6 @@ subroutine write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xcont,reclayerinfo)
     reclayerinfo
 
 end subroutine write_t5hdr
-
-
 
 real function broad(pinit,tinit,gasinit)
   use useful_constants
