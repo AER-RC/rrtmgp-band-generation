@@ -8,13 +8,13 @@ module useful_constants
 
   ! PARAMETER DECLARATIONS
   integer, parameter :: mxmol=9, mxl=200, mxref = 50
-  integer, parameter :: ntpts=5,neta=9
+  integer, parameter :: ntpts=5,neta=9,nmol=7
   integer, parameter :: ipthak=3
   real, parameter :: deltatint=15.0, overthresh = 1.05
 
   ! Data declarations
   character(len=20) :: fnum(99),nnum(9)
-  real, dimension(neta) :: ETA
+  real, dimension(neta) :: eta
     
   data eta/0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0/
   data nnum/'01','02','03','04','05','06','07','08','09'/
@@ -28,7 +28,49 @@ module useful_constants
     '70','71','72','73','74','75','76','77','78','79', &
     '80','81','82','83','84','85','86','87','88','89', &
     '90','91','92','93','94','95','96','97','98','99' / 
-    
+
+  contains
+    real function broad(pinit,tinit,gasinit)
+      implicit none
+
+      real, intent(in) :: pinit,tinit
+      real, dimension(7,1), intent(in) :: gasinit
+      real :: rhotot,water,rhodry
+  
+      rhotot = rhofac*pinit/(boltz*tinit)
+      water = gasinit(1,1)*rhotot/(1.+gasinit(1,1))
+      rhodry = rhotot-water
+
+      broad=rhodry*1.e5*(1.-sum(gasinit(2:7,1)))
+    end function 
+
+    real function vmrtoden(pinit,tinit,wvinit)
+      implicit none  
+      real, intent(in) :: pinit,tinit,wvinit
+      real :: rhoair
+  
+      rhoair = alosmt*(pinit/pzero)*(tzero/tinit) 
+      vmrtoden = (wvinit/(1.+wvinit))*rhoair
+    end
+
+    real function dentovmr(pinit,tinit,wvinit)
+      implicit none
+      real, intent(in) :: pinit,tinit,wvinit
+      real :: rhoair
+  
+      rhoair = alosmt*(pinit/pzero)*(tzero/tinit)  
+      dentovmr = wvinit/(rhoair-wvinit)
+    end
+
+    real function satden(tinit)
+      implicit none
+      real, intent(in) :: tinit
+      real :: tfrac
+
+      tfrac = tzero/tinit
+      satden = tfrac*b*exp(c1+c2*tfrac+c3*tfrac**2)*1.0e-6
+    end function satden
+
 end module
 
 program write_tape5s
@@ -39,23 +81,21 @@ program write_tape5s
 
   ! Interface definitions
   interface
-    real function broad(pinit,tinit,gasinit)
-      real, intent(in) :: pinit,tinit
-      real, dimension(7,1), intent(in) :: gasinit
-    end function broad      
 
-    real function vmrtoden(pinit,tinit,wvinit)
-      real, intent(in) :: pinit,tinit,wvinit
-    end function vmrtoden
+    subroutine calculate_twokey_nowater(ileva,ilevb,ig1,ig2,win,wmapper,wmappee)
+      integer, intent(in) :: ileva,ilevb,ig1,ig2
+      real, dimension(mxmol,mxl,ntpts,neta), intent(in) :: win
+      real, dimension(mxmol,mxl,ntpts,neta), intent(out) :: wmapper,wmappee
+    end subroutine calculate_twokey_nowater
 
-    real function dentovmr(pinit,tinit,wvinit)
-      real, intent(in) :: pinit,tinit,wvinit
-    end function dentovmr
+    subroutine calculate_twokey_water(ileva,ilevb,ig1,ig2,pin,tin,win,wmapper,wmappee)
+      integer, intent(in) :: ileva,ilevb,ig1,ig2
+      real, dimension(mxl), intent(in) :: pin
+      real, dimension(mxl,ntpts), intent(in) :: tin
+      real, dimension(mxmol,mxl,ntpts,neta), intent(in) :: win
+      real, dimension(mxmol,mxl,ntpts,neta), intent(out) :: wmapper,wmappee
+    end subroutine calculate_twokey_water
     
-    real function satden(tinit)
-      real, intent(in) :: tinit 
-    end function satden
-
     subroutine compute_wavenumber(wavenumber1,wavenumber2,dvout)
       real, intent(inout) :: wavenumber1, wavenumber2
       real, intent(out) :: dvout
@@ -74,13 +114,12 @@ program write_tape5s
     end subroutine write_t5hdr
   end interface
 
-
   ! cHARACTER DECLARATIONS
   character(len=20) :: rec_2_1_lo, rec_2_1_hi
   character(len=50) :: tape5
 
   ! INTEGER DECLARATION
-  integer igas1_l,igas2_l,igas1_u,igas2_u,nmol
+  integer igas1_l,igas2_l,igas1_u,igas2_u
   integer iwvn,imol,im
   integer ilev,nlev,levdup(1),levlow(1),iref
   integer index,index2,itemp,ieta
@@ -92,18 +131,17 @@ program write_tape5s
   ! REAL DECLARATIONS 
 
   real :: wavenumber1, wavenumber2, dvout
-  real :: p,frac
-  real :: dennum,denrat,densat,densatover,wsat,wsatover,wetahigh,wtst
+  real :: p,frac, dennum
   real, dimension(mxref) :: pref,tref
   real, dimension(mxmol,mxref) :: amol
   real, dimension(mxl) :: press,rh,t0
   real, dimension(mxl,ntpts) :: temp
   real, dimension(mxmol,mxl) :: w_orig
-  real, dimension(mxmol,mxl,ntpts,neta) :: wmol,wmoltwo,wmapper,wmappee,wmappertwo,wmappeetwo
+  real, dimension(mxmol,mxl,ntpts,neta) :: wmol,wmoltwo,wmapper,wmappee
   real, dimension(ntpts) :: deltat
   
   namelist /par/ wavenumber1,wavenumber2,igas1_l,igas2_l,igas1_u, &
-    igas2_u,igas_minor_l,igas_minor_u,nmol 
+    igas2_u,igas_minor_l,igas_minor_u
  
   !The following data corresponds to an MLS standard atmosphere.
   include 'std_atmos.f90'  
@@ -176,7 +214,6 @@ program write_tape5s
   enddo 
 
   ! Set up additional tape5 info
-  nmol = 7
   write(rec_2_1_lo,'(" 1 ",(i2),(i2),"   1.000000  ")') levdup(1),nmol
   write(rec_2_1_hi,'(" 1 ",(i2),(i2),"   1.000000  ")') nlev-levdup(1)+1,nmol  
 
@@ -184,8 +221,9 @@ program write_tape5s
   call setup_continuum(igas1_l,igas2_l,xlcmapper,xlcmappee)
   call setup_continuum(igas1_u,igas2_u,xucmapper,xucmappee)
   
-  if (igas2_l .ne. 0 .and. igas2_l .eq. 0) then
+  if (igas1_l .ne. 0 .and. igas2_l .eq. 0) then
   ! LOWER ATMOSPHERE, ONE KEY SPECIES
+
     ! Handling the mapper tape5
     index = 1
     wmapper = wmol
@@ -220,81 +258,20 @@ program write_tape5s
       index=index+1
     enddo  
         
-  else if (igas2_l .ne. 0 .and. igas2_l .ne. 0) then
+  else if (igas1_l .ne. 0 .and. igas2_l .ne. 0) then
   ! LOWER ATMOSPHERE, TWO KEY SPECIES    
+
+  !! LOWER ATMOSPHERE, TWO KEY SPECIES, NEITHER IS WATER VAPOR
     if (igas1_l .ne. 1 .and. igas2_l .ne. 1) then
-      !! LOWER ATMOSPHERE, TWO KEY SPECIES, NEITHER IS WATER VAPOR
-      do ieta=1,neta
-        do itemp=1,ntpts
-          do ilev=1,levdup(1)
-            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
-            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
-            if (ieta .eq. 1) then 
-              wmappertwo(igas1_l,ilev,itemp,ieta) = 0.0
-              wmappeetwo(igas2_l,ilev,itemp,ieta) = wmappertwo(igas2_l,ilev,itemp,ieta)            
-            else if (ieta .eq. 9) then
-              wmappertwo(igas2_l,ilev,itemp,ieta) = 0.0
-              wmappeetwo(igas1_l,ilev,itemp,ieta) = wmoltwo(igas1_l,ilev,itemp,9)              
-            else
-              wmappertwo(igas1_l,ilev,itemp,ieta) = wmoltwo(igas1_l,ilev,itemp,ieta)* &
-              eta(ieta)/(1.0-eta(ieta))
-              wmappeetwo(igas1_l,ilev,itemp,ieta) = wmappertwo(igas1_l,ilev,itemp,ieta)
-              wmappeetwo(igas2_l,ilev,itemp,ieta) = wmappertwo(igas2_l,ilev,itemp,ieta)                             
-            end if    
-          enddo
-        end do
-      end do
+      print*,'LOWER: using calculate_twokey_nowater'
+      call calculate_twokey_nowater(1,levdup(1),1,igas1_l,igas2_l,wmoltwo,wmapper,wmappee)      
     else if (igas1_l .eq. 1) then
       !! LOWER ATMOSPHERE, TWO KEY SPECIES, ONE IS WATER VAPOR
-      do ilev=1,levdup(1)
-        ! WARNING: BE CAREFUL TO CHANGE THIS AS NEEDED
-        wetahigh=wmoltwo(1,ilev,1,9)*(0.99/(1.0-0.99))
-        do itemp=1,ntpts
-          densat = satden(temp(ilev,itemp))
-          densatover = overthresh*densat
-          wsat = dentovmr(press(ilev),temp(ilev,itemp),densat)
-          wsatover = dentovmr(press(ilev),temp(ilev,itemp),densatover)
-          do ieta=1,neta
-            ! Set all gases to their standard, normal values
-            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
-            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
-            if (ieta .eq. 1) then
-              ! Set WV (igas1_l) to 0; leave other key species as normal 
-              wmappertwo(1,ilev,itemp,ieta) = 0.0
-              wmappeetwo(1,ilev,itemp,ieta) = 0.0
-            else if (ieta .eq. 9) then
-              dennum=vmrtoden(press(ilev),temp(ilev,itemp),wetahigh)
-              denrat = dennum/densat
-              if (denrat .gt. overthresh) then
-                wmappertwo(1,ilev,itemp,ieta) = wsatover
-              endif             
-              wmappertwo(igas2_l,ilev,itemp,ieta) = 0.0
-              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
-            else
-              wtst = wmappertwo(1,ilev,itemp,ieta)* &
-                eta(ieta)/(1.0-eta(ieta))
-              dennum = vmrtoden(press(ilev),temp(ilev,itemp),wtst)
-              denrat = dennum/densat
-              if (denrat .gt. overthresh) then
-                ! Readjust the second key species now that we have to adjust water vapor.
-                wmappertwo(2,ilev,itemp,ieta) = &
-                  ((1.0-eta(ieta))/eta(ieta))* &
-                  (wmappertwo(2,ilev,itemp,ieta)/ &
-                  wmappertwo(1,ilev,itemp,ieta))* &
-                  wsatover
-                  ! Set water vapor to the threshold saturation value.
-                wmappertwo(1,ilev,itemp,ieta) = wsatover   
-              else
-                wmappertwo(1,ilev,itemp,ieta) = wtst
-              endif 
-              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
-              wmappeetwo(2,ilev,itemp,ieta) = wmappertwo(2,ilev,itemp,ieta)                    
-            end if    
-          enddo
-        end do
-      end do     
+      print*,'LOWER: using calculate_twokey_water'
+      call calculate_twokey_water(1,levdup(1),1,igas1_l,igas2_l,press,temp,wmoltwo,wmapper,wmappee)            
     else
       print*,'WARNING: igas1_l ne 1, not allowed'
+      stop
     endif
     
     ! LOWER ATMOSPHERE, TWO KEY SPECIES
@@ -308,8 +285,8 @@ program write_tape5s
           call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmapper(1:7,ieta),rec_2_1_lo)      
           do ilev=1,levdup(1)
             write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-            write(iunit,'(1P,8G15.7,0P)') wmappertwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
-              temp(ilev,itemp),wmappertwo(1:7,ilev,itemp,ieta))
+            write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmapper(1:7,ilev,itemp,ieta))
           enddo
           close(iunit)
           index=index+1
@@ -325,8 +302,8 @@ program write_tape5s
           call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmappee(1:7,ieta),rec_2_1_lo)      
           do ilev=1,levdup(1)
             write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-            write(iunit,'(1P,8G15.7,0P)') wmappeetwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
-              temp(ilev,itemp),wmappeetwo(1:7,ilev,itemp,ieta))
+            write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmappee(1:7,ilev,itemp,ieta))
           enddo
           close(iunit)
           index=index+1
@@ -336,7 +313,7 @@ program write_tape5s
 
   !!! UPPER ATMOSPHERE
 
-  if (igas2_u .ne. 0 .and. igas2_u .eq. 0) then
+  if (igas1_u .ne. 0 .and. igas2_u .eq. 0) then
   ! UPPER ATMOSPHERE, ONE KEY SPECIES
     ! Handling the mapper tape5
     index = ntpts+1
@@ -359,7 +336,7 @@ program write_tape5s
     index = ntpts+1
     wmappee = 0.0 
     do itemp = 1,ntpts
-      wmappee(igas1_l,levdup(1):nlev,itemp,neta)=wmol(igas1_l,levdup(1):nlev,itemp,neta)
+      wmappee(igas2_u,levdup(1):nlev,itemp,neta)=wmol(igas2_u,levdup(1):nlev,itemp,neta)
       tape5 = 'tape5nc-T'//trim(fnum(index))//'-n09'
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
@@ -373,88 +350,20 @@ program write_tape5s
       index=index+1
     enddo  
         
-  else if (igas2_u .ne. 0 .and. igas2_u .ne. 0) then
-
+  else if (igas1_u .ne. 0 .and. igas2_u .ne. 0) then
     if (igas1_u .ne. 1 .and. igas2_u .ne. 1) then
       !! UPPER ATMOSPHERE, TWO KEY SPECIES, NEITHER IS WATER VAPOR
-      print*,'HERE IN THIS LOOP',igas1_u,igas2_u,levdup(1)
-      do ieta=1,neta,2
-        do itemp=1,ntpts
-          do ilev=levdup(1),nlev
-            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
-            print*,'ILEV',wmappertwo(1:nmol,ilev,itemp,ieta)
-            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
-            if (ieta .eq. 1) then 
-              wmappertwo(igas1_u,ilev,itemp,ieta) = 0.0
-              wmappeetwo(igas2_u,ilev,itemp,ieta) = wmappertwo(igas2_u,ilev,itemp,ieta) 
-              print*,'ILEVINSIDE',wmappertwo(1:nmol,ilev,itemp,ieta)            
-            else if (ieta .eq. 9) then
-              wmappertwo(igas1_u,ilev,itemp,ieta) = wmappertwo(igas1_u,ilev,itemp,ieta) 
-              wmappeetwo(igas2_u,ilev,itemp,ieta) = 0.0  
-            else
-              wmappertwo(igas1_u,ilev,itemp,ieta) = wmoltwo(igas1_u,ilev,itemp,ieta)* &
-              eta(ieta)/(1.0-eta(ieta))
-              wmappeetwo(igas2_u,ilev,itemp,ieta) = wmappertwo(igas1_u,ilev,itemp,ieta)                           
-            end if    
-          enddo
-        end do
-      end do
-    else if (igas1_u .eq. 1) then
-      print*,'HERE? NO....'
-      !! LOWER ATMOSPHERE, TWO KEY SPECIES, ONE IS WATER VAPOR
-      do ilev=levdup(1),nlev
-        ! WARNING: BE CAREFUL TO CHANGE THIS AS NEEDED
-        wetahigh=wmoltwo(1,ilev,1,9)*(0.99/(1.0-0.99))
-        do itemp=1,ntpts
-          densat = satden(temp(ilev,itemp))
-          densatover = overthresh*densat
-          wsat = dentovmr(press(ilev),temp(ilev,itemp),densat)
-          wsatover = dentovmr(press(ilev),temp(ilev,itemp),densatover)
-          do ieta=1,neta,2
-            ! Set all gases to their standard, normal values
-            wmappertwo(1:nmol,ilev,itemp,ieta) = wmoltwo(1:nmol,ilev,itemp,9)
-            wmappeetwo(1:nmol,ilev,itemp,ieta) = 0.0
-            if (ieta .eq. 1) then
-              ! Set WV (igas1_l) to 0; leave other key species as normal 
-              wmappertwo(1,ilev,itemp,ieta) = 0.0
-              wmappeetwo(1,ilev,itemp,ieta) = 0.0
-            else if (ieta .eq. 9) then
-              dennum=vmrtoden(press(ilev),temp(ilev,itemp),wetahigh)
-              denrat = dennum/densat
-              if (denrat .gt. overthresh) then
-                wmappertwo(1,ilev,itemp,ieta) = wsatover
-              endif             
-              wmappertwo(igas2_u,ilev,itemp,ieta) = 0.0
-              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
-            else
-              wtst = wmappertwo(1,ilev,itemp,ieta)* &
-                eta(ieta)/(1.0-eta(ieta))
-              dennum = vmrtoden(press(ilev),temp(ilev,itemp),wtst)
-              denrat = dennum/densat
-              if (denrat .gt. overthresh) then
-                ! Readjust the second key species now that we have to adjust water vapor.
-                wmappertwo(2,ilev,itemp,ieta) = &
-                  ((1.0-eta(ieta))/eta(ieta))* &
-                  (wmappertwo(2,ilev,itemp,ieta)/ &
-                  wmappertwo(1,ilev,itemp,ieta))* &
-                  wsatover
-                  ! Set water vapor to the threshold saturation value.
-                wmappertwo(1,ilev,itemp,ieta) = wsatover   
-              else
-                wmappertwo(1,ilev,itemp,ieta) = wtst
-              endif 
-              wmappeetwo(1,ilev,itemp,ieta) = wmappertwo(1,ilev,itemp,ieta)
-              wmappeetwo(2,ilev,itemp,ieta) = wmappertwo(2,ilev,itemp,ieta)                    
-            end if    
-          enddo
-        end do
-      end do  
-    end if
-  else
-    print*,'WARNING: Something wrong with upper atmosphere input'
-  end if 
-      ! UPPER ATMOSPHERE, TWO KEY SPECIES
-      ! Handling the mapper tape5
+      print*,'UPPER: using calculate_twokey_nowater '
+      call calculate_twokey_nowater(levdup(1),nlev,2,igas1_u,igas2_u,wmoltwo,wmapper,wmappee)   
+    else if (igas1_u .eq. 1) then 
+      !! UPPER ATMOSPHERE, TWO KEY SPECIES, ONE IS WATER VAPOR
+      print*,'UPPER: using calculate_twokey_water '
+      call calculate_twokey_water(levdup(1),nlev,2,igas1_u,igas2_u,press,temp,wmoltwo,wmapper,wmappee)   
+    else
+      print*,'WARNING: Something wrong with upper atmosphere input'
+      stop
+    end if 
+
       do ieta = 1,neta,2
         index = 6
         do itemp = 1,ntpts
@@ -462,11 +371,10 @@ program write_tape5s
           iunit=20
           open(iunit,FILE=tape5,FORM='FORMATTED')
           call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmapper(1:7,ieta),rec_2_1_lo)      
-          do ilev=1,levdup(1)
+          do ilev=levdup(1),nlev
             write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-            print*,'WRITING...',wmappertwo(1:7,ilev,itemp,ieta)
-            write(iunit,'(1P,8G15.7,0P)') wmappertwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
-              temp(ilev,itemp),wmappertwo(1:7,ilev,itemp,ieta))
+            write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmapper(1:7,ilev,itemp,ieta))
           enddo
           close(iunit)
           index=index+1
@@ -480,17 +388,123 @@ program write_tape5s
           iunit=20
           open(iunit,FILE=tape5,FORM='FORMATTED')
           call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmappee(1:7,ieta),rec_2_1_lo)      
-          do ilev=1,levdup(1)
+          do ilev=levdup(1),nlev
             write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
-            write(iunit,'(1P,8G15.7,0P)') wmappeetwo(1:7,ilev,itemp,ieta),broad(press(ilev),&
-              temp(ilev,itemp),wmappeetwo(1:7,ilev,itemp,ieta))
+            write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
+              temp(ilev,itemp),wmappee(1:7,ilev,itemp,ieta))
           enddo
           close(iunit)
           index=index+1
         enddo 
       enddo
+    end if
+end 
 
-end
+!! LOWER ATMOSPHERE, TWO KEY SPECIES, NEITHER IS WATER VAPOR
+subroutine calculate_twokey_nowater(ileva,ilevb,ig1,ig2,win,wmapper,wmappee)
+  use useful_constants
+  implicit none
+  
+  integer, intent(in) :: ileva,ilevb,ig1,ig2
+  real, dimension(mxmol,mxl,ntpts,neta), intent(in) :: win
+  real, dimension(mxmol,mxl,ntpts,neta), intent(out) :: wmapper,wmappee
+  
+  integer :: ieta,itemp,ilev
+
+  if (ig1 .eq. 1 .or. ig2 .eq. 1) then 
+    print*,'calculate_twokey_nowater: WATER VAPOR KEY SPECIES NOT ALLOWED IN THIS SUBROUTINE. INVALID igas #',ig1,ig2
+    stop
+  end if
+    
+  do ieta=1,neta
+    do itemp=1,ntpts
+      do ilev=ileva,ilevb
+        wmapper(1:nmol,ilev,itemp,ieta) = win(1:nmol,ilev,itemp,9)
+        wmappee(1:nmol,ilev,itemp,ieta) = 0.0
+        if (ieta .eq. 1) then 
+          wmapper(ig1,ilev,itemp,ieta) = 0.0
+          wmappee(ig2,ilev,itemp,ieta) = wmapper(ig2,ilev,itemp,ieta)            
+        else if (ieta .eq. 9) then
+          wmappee(ig1,ilev,itemp,ieta) = win(ig1,ilev,itemp,9)              
+          wmapper(ig2,ilev,itemp,ieta) = 0.0
+        else
+          wmapper(ig1,ilev,itemp,ieta) = win(ig1,ilev,itemp,9) * &
+          eta(ieta)/(1.0-eta(ieta))
+          wmappee(ig1,ilev,itemp,ieta) = wmapper(ig1,ilev,itemp,ieta)
+          wmappee(ig2,ilev,itemp,ieta) = wmapper(ig2,ilev,itemp,ieta)                             
+        end if    
+      enddo
+    end do
+  end do
+end subroutine calculate_twokey_nowater
+
+subroutine calculate_twokey_water(ileva,ilevb,ig1,ig2,pin,tin,win,wmapper,wmappee)
+  use useful_constants
+  implicit none
+  
+  integer, intent(in) :: ileva,ilevb,ig1,ig2
+  real, dimension(mxl), intent(in) :: pin
+  real, dimension(mxl,ntpts), intent(in) :: tin
+  real, dimension(mxmol,mxl,ntpts,neta), intent(in) :: win
+  real, dimension(mxmol,mxl,ntpts,neta), intent(out) :: wmapper,wmappee
+
+  integer :: ieta,itemp,ilev
+  real :: dennum,denrat,densat,densatover,wsat,wsatover,wetahigh,wtst
+  
+  if (ig1 .ne. 1 .or. ig2 .eq. 1) then 
+    print*,'calculate_twokey_water: FIRST KEY SPECIES IS NOT WATER VAPOR.  INVALID igas #',ig1,ig2
+    stop
+  end if
+
+  do ilev=ileva,ilevb
+    ! WARNING: BE CAREFUL TO CHANGE THIS AS NEEDED
+    wetahigh=win(1,ilev,1,9)*(0.99/(1.0-0.99))
+    do itemp=1,ntpts
+      densat = satden(tin(ilev,itemp))
+      densatover = overthresh*densat
+      wsat = dentovmr(pin(ilev),tin(ilev,itemp),densat)
+      wsatover = dentovmr(pin(ilev),tin(ilev,itemp),densatover)
+      do ieta=1,neta
+        ! Set all gases to their standard, normal values
+        wmapper(1:nmol,ilev,itemp,ieta) = win(1:nmol,ilev,itemp,9)
+        wmappee(1:nmol,ilev,itemp,ieta) = 0.0
+        if (ieta .eq. 1) then
+          ! Set WV (igas1_l) to 0; leave other key species as normal 
+          wmapper(1,ilev,itemp,ieta) = 0.0
+          wmappee(ig2,ilev,itemp,ieta) = wmapper(ig2,ilev,itemp,ieta)
+        else if (ieta .eq. 9) then
+          dennum=vmrtoden(pin(ilev),tin(ilev,itemp),wetahigh)
+          denrat = dennum/densat
+          if (denrat .gt. overthresh) then
+            wmapper(1,ilev,itemp,ieta) = wsatover
+          endif             
+          wmapper(ig2,ilev,itemp,ieta) = 0.0
+          wmappee(1,ilev,itemp,ieta) = wmapper(1,ilev,itemp,ieta)
+        else
+          wtst = wmapper(1,ilev,itemp,ieta)* &
+            eta(ieta)/(1.0-eta(ieta))
+          dennum = vmrtoden(pin(ilev),tin(ilev,itemp),wtst)
+          denrat = dennum/densat
+          if (denrat .gt. overthresh) then
+            ! Readjust the second key species now that we have to adjust water vapor.
+            wmapper(ig2,ilev,itemp,ieta) = &
+              ((1.0-eta(ieta))/eta(ieta))* &
+              (wmapper(ig2,ilev,itemp,ieta)/ &
+              wmapper(1,ilev,itemp,ieta))* &
+              wsatover
+              ! Set water vapor to the threshold saturation value.
+            wmapper(1,ilev,itemp,ieta) = wsatover   
+          else
+            wmapper(1,ilev,itemp,ieta) = wtst
+          endif 
+          wmappee(1,ilev,itemp,ieta) = wmapper(1,ilev,itemp,ieta)
+          wmappee(ig2,ilev,itemp,ieta) = wmapper(ig2,ilev,itemp,ieta)                    
+        end if    
+      enddo
+    end do
+  end do     
+    
+end subroutine calculate_twokey_water
 
 subroutine compute_wavenumber(wavenumber1,wavenumber2,dvout)
   real, intent(inout) :: wavenumber1,wavenumber2
@@ -550,9 +564,9 @@ subroutine setup_continuum(ig1,ig2,xcmapper,xcmappee)
   ! if there were two key species even when there isn't, but those values
   ! are not used.
   xcmapper = 1.0
-  xcmapper(7,1:0) = 0.0 
+  xcmapper(7,1:neta) = 0.0 
   xcmappee = 0.0
-  xcmappee(7,1:0) = 0.0 
+  xcmappee(7,1:neta) = 0.0 
   
   if (ig1 .eq. ig2) then
     print*,'WARNING: BAND GASES CANNOT BE THE SAME'
@@ -636,48 +650,5 @@ subroutine write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xcont,reclayerinfo)
 
 end subroutine write_t5hdr
 
-real function broad(pinit,tinit,gasinit)
-  use useful_constants
-  implicit none
 
-  real, intent(in) :: pinit,tinit
-  real, dimension(7,1), intent(in) :: gasinit
-  real :: rhotot,water,rhodry
-  
-  rhotot = rhofac*pinit/(boltz*tinit)
-  water = gasinit(1,1)*rhotot/(1.+gasinit(1,1))
-  rhodry = rhotot-water
-
-  broad=rhodry*1.e5*(1.-sum(gasinit(2:7,1)))
-end function 
-
-real function vmrtoden(pinit,tinit,wvinit)
-  use useful_constants
-  implicit none  
-  real, intent(in) :: pinit,tinit,wvinit
-  real :: rhoair
-  
-  rhoair = alosmt*(pinit/pzero)*(tzero/tinit) 
-  vmrtoden = (wvinit/(1.+wvinit))*rhoair
-end
-
-real function dentovmr(pinit,tinit,wvinit)
-  use useful_constants
-  implicit none
-  real, intent(in) :: pinit,tinit,wvinit
-  real :: rhoair
-  
-  rhoair = alosmt*(pinit/pzero)*(tzero/tinit)  
-  dentovmr = wvinit/(rhoair-wvinit)
-end
-
-real function satden(tinit)
-  use useful_constants
-  implicit none
-  real, intent(in) :: tinit
-  real :: tfrac
-
-  tfrac = tzero/tinit
-  satden = tfrac*b*exp(c1+c2*tfrac+c3*tfrac**2)*1.0e-6
-end function satden
 
