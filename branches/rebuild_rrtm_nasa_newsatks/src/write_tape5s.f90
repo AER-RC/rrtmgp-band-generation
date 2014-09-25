@@ -76,7 +76,6 @@ end module
 program write_tape5s
 
   use useful_constants
-  
   implicit none
 
   ! Interface definitions
@@ -517,8 +516,14 @@ subroutine setup_continuum(ig1,ig2,xcmapper,xcmappee)
   xcmappee = 0.0
   xcmappee(7,1:neta) = 0.0 
   
-  if (ig1 .eq. ig2) then
-    print*,'WARNING: BAND GASES CANNOT BE THE SAME'
+  if (ig1 .eq. 0 .and. ig2 .eq. 0) then
+    print*,'Creating continuum scale factors: none as both gases are zero'
+    xcmapper = 0.0
+    xcmappee = 0.0
+  endif
+
+  if (ig1 .ne. 0 .and. ig1 .eq. ig2) then
+    print*,'WARNING: BAND GASES CANNOT BE THE SAME; something weird with ig: ',ig1,ig2
     xcmapper=-99.0
     xcmappee=-99.0
   end if 
