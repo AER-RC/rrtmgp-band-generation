@@ -1,3 +1,11 @@
+! PROGRAM write_tape5s.f90
+! September 2014
+! Jen Delamere
+! NEED TO ADD COMMENTS
+! THINGS TO CHECK WITH UPDATES:
+!  - wvn_lcouple restraints
+!  - change to double precision
+
 module useful_constants
   implicit none
   real, parameter :: tzero=273.15,pzero=1013.25,rhofac=1.0006
