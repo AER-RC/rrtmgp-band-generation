@@ -14,6 +14,14 @@
 #  INPUT PARAM FILENAME ($3): Name of namelist file that describes the bands
 #  used in these scripts. 
 
+#Source input set of codes; set up lbl,tape3,scriptdirs,etc
+source $2
+
+# First, ensure all codes are compiled in the src directory which is up and over from objdir
+set cdir=`pwd`
+cd $exedir; cd ../src/; make -f make_fortran_codes
+cd $cdir
+
 #Create a directory for the band you are interested in
 mkdir $1
 echo Create Directory: $1
@@ -21,9 +29,6 @@ echo Create Directory: $1
 #Copy files to the directories that need it.
 \cp $2 $1/input_codes
 \cp $3 $1/input_param
-
-#Source input set of codes; set up lbl,tape3,scriptdirs,etc
-source $2
 
 #Now commence work in the new band directory
 cd $1
