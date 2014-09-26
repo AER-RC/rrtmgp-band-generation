@@ -470,10 +470,8 @@ subroutine compute_wavenumber(wavenumber1,wavenumber2,dvout)
     enddo
  
     ! Temporary solution for setting up number of points going into the calculation of k.
-    if (wavenumber1.ge.125. .and. wavenumber1.lt.240.) then
+    if (wavenumber1.le.350.) then
       dvout=0.00002
-    else if (wavenumber1.le.325) then
-      dvout=0.00004
     else if (wavenumber1.le.1300.) then
       dvout=0.00005
     else if (wavenumber1.le.1700.) then
