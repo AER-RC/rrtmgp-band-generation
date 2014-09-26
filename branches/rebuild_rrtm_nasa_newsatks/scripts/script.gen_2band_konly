@@ -18,9 +18,9 @@
 source $2
 
 # First, ensure all codes are compiled in the src directory which is up and over from objdir
-set cdir=`pwd`
-cd $exedir; cd ../src/; make -f make_fortran_codes
-cd $cdir
+#set cdir=`pwd`
+#cd $exedir; cd ../src/; make -f make_fortran_codes
+#cd $cdir
 
 #Create a directory for the band you are interested in
 mkdir $1
@@ -56,7 +56,7 @@ echo Writing TAPE5s
 ${exedir}/write_tape5s < input_param
 
 #Generate TAPE5s for T(ref) and T(ref) - 15 for lower/upper atmospheres.
-${exedir}/write_tape5_minor < input_param
+#${exedir}/write_tape5_minor < input_param
 
 #LOWER ATMOSPHERE
 #Each troposphere run (P > 100mb) has 13 layers.  Generate the 
@@ -93,14 +93,14 @@ while ($jl < 10)
 #Run LBLRTM_F90 without the WV continuum and without all absorbers except
 #key species
 	\cp ${tape5nc} TAPE5
-        lblrtm_f90
+        ./lblrtm_f90
 #LBLRTM_F90 generates ODint_ files for each layer. Move
 #these to another filename
 	${scriptdir}/script.mv_files mv ODint NCint
 #Run LBLRTM_F90 with all the absorbers including continua except WV.
 	\rm TAPE5
 	\cp ${tape5od} TAPE5
-	lblrtm_f90
+	./lblrtm_f90
 	${exedir}/kdis_2sort_l < input_param 
 #The output of absorption coefficients in file CK_ABS.DAT
 #to reference file
@@ -183,11 +183,11 @@ while ($ju < 10)
 	endif
         \rm TAPE5
 	\cp ${tape5nc} TAPE5
-	lblrtm_f90
+	./lblrtm_f90
 	${scriptdir}/script.mv_files mv ODint NCint 
 	\rm TAPE5
 	\cp ${tape5od} TAPE5
-	lblrtm_f90
+	./lblrtm_f90
 	${exedir}/kdis_2sort_u < input_param
 	\mv -f CK_ABS.DAT ${kgfile}
 
