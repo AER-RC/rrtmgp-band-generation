@@ -265,6 +265,7 @@ program write_tape5s
         write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmapper(1:7,ilev,itemp,ieta))
       enddo
+      write(iunit,'%%%%%')
       close(iunit)
       index = index+1
     enddo 
@@ -280,6 +281,7 @@ program write_tape5s
         write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmappee(1:7,ilev,itemp,ieta))
       enddo
+      write(iunit,'%%%%%')
       close(iunit)
       index = index+1
     enddo 
@@ -322,6 +324,7 @@ program write_tape5s
         write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmapper(1:7,ilev,itemp,ieta))
       enddo
+      write(iunit,'%%%%%')
       close(iunit)
       index=index+1
     enddo 
@@ -337,6 +340,7 @@ program write_tape5s
         write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmappee(1:7,ilev,itemp,ieta))
       enddo
+      write(iunit,'%%%%%')
       close(iunit)
       index=index+1
     enddo 
