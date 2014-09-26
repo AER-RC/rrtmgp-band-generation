@@ -261,7 +261,7 @@ program write_tape5s
       open(iunit,FILE=tape5,FORM='FORMATTED')
       call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmapper(1:7,ieta),rec_2_1_lo)      
       do ilev=1,levdup(1)
-        write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+        write(iunit,'(1P,G15.7,G10.5,13X,I2,0P)') press(ilev),temp(ilev,itemp),ipthak
         write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmapper(1:7,ilev,itemp,ieta))
       enddo
@@ -277,7 +277,7 @@ program write_tape5s
       open(iunit,FILE=tape5,FORM='FORMATTED')
       call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xlcmappee(1:7,ieta),rec_2_1_lo)      
       do ilev=1,levdup(1)
-        write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+        write(iunit,'(1P,G15.7,G10.5,13X,I2,0P)') press(ilev),temp(ilev,itemp),ipthak
         write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmappee(1:7,ilev,itemp,ieta))
       enddo
@@ -320,7 +320,7 @@ program write_tape5s
       open(iunit,FILE=tape5,FORM='FORMATTED')
       call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmapper(1:7,ieta),rec_2_1_lo)      
       do ilev=levdup(1),nlev
-        write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+        write(iunit,'(1P,G15.7,G10.5,13X,I2,0P)') press(ilev),temp(ilev,itemp),ipthak
         write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmapper(1:7,ilev,itemp,ieta))
       enddo
@@ -336,7 +336,7 @@ program write_tape5s
       open(iunit,FILE=tape5,FORM='FORMATTED')
       call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmappee(1:7,ieta),rec_2_1_lo)      
       do ilev=levdup(1),nlev
-        write(iunit,'1P,G15.7,G10.5,13X,I2,0P') press(ilev),temp(ilev,itemp),ipthak
+        write(iunit,'(1P,G15.7,G10.5,13X,I2,0P)') press(ilev),temp(ilev,itemp),ipthak
         write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
           temp(ilev,itemp),wmappee(1:7,ilev,itemp,ieta))
       enddo
@@ -505,7 +505,7 @@ subroutine read_pressurefile(nlev,pout)
   read(10,'(i3)') nlev
   ! Read in elements from pressure profile
   do ilev = 1,nlev
-    read(10,'g18.7') pout(ilev)
+    read(10,'(g18.7)') pout(ilev)
   enddo
   close(10)
 end subroutine read_pressurefile
