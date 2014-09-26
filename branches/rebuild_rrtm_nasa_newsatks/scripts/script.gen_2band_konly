@@ -45,12 +45,10 @@ echo `svn info ${scriptdir}` >> build_info.txt
 
 echo Writing TAPE5s
 #Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
-#Includes all absorbers, including the H20 continuum
-${exedir}/write_tape5 < input_param
-
-#Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
-#Do NOT include the H20 continuum
-${exedir}/write_tape5_nc < input_param
+#Generates mapper (tape5-*) and mappee (tape5nc-)
+#Mapper includes all absorbers, including the H20 continuum
+#Mappeee excludes the H2O continuum.
+${exedir}/write_tape5s < input_param
 
 #Generate TAPE5s for T(ref) and T(ref) - 15 for lower/upper atmospheres.
 ${exedir}/write_tape5_minor < input_param
