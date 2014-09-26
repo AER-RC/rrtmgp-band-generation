@@ -18,9 +18,8 @@ OBJ1 = \
          
 
 OBJ2 = \
-	write_tape5 \
-	write_tape5_nc \
-	write_tape5_minor \
+	write_tape5s \
+	write_tape5_minor
 
 OBJ3 = \
 	write_data_cont \
@@ -47,6 +46,9 @@ $(OBJ1): std_atmos_kdis.f
 
 
 % :%.f 
+	pgf90  $< -o $(OBJPATH)/$@
+
+% :%.f90
 	pgf90  $< -o $(OBJPATH)/$@
 
 
