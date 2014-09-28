@@ -20,6 +20,10 @@ source $2
 
 #cd to the parent run directory; all runs will be launched out of this directory
 cd $rdir
+if (! -d $rdir) then
+  echo "Making run directory $rdir"
+  mkdir $rdir
+endif
 
 # First, ensure all codes are compiled in the src directory which is up and over from objdir
 #set cdir=`pwd`
@@ -97,7 +101,8 @@ while ($jl < 10)
 #Run LBLRTM_F90 without the WV continuum and without all absorbers except
 #key species
 	\cp ${tape5nc} TAPE5
-        ./lblrtm_f90
+  ./lblrtm_f90
+
 #LBLRTM_F90 generates ODint_ files for each layer. Move
 #these to another filename
 	${scriptdir}/script.mv_files mv ODint NCint
