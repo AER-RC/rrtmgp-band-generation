@@ -9,10 +9,11 @@
 
 #INPUT:
 #  DIRNAME ($1): name of the directory you want to create to store all output
-#  i.e. script.gen_2band_konly build_gb5
-#  INPUT CODE FILENAME ($2): Name of file that contains environment variables to be
+#  i.e. script.gen_2band_konly build_gb5 input_codes input_params 
+#  INPUT CODE FILENAME ($2): Name of file that contains environment variables to be used;
+#    sourced immediately.  Can be just a filename or a path/filename.
 #  INPUT PARAM FILENAME ($3): Name of namelist file that describes the bands
-#  used in these scripts. 
+#  used in these scripts. Can be just a filename or a path/filename.
 
 #Source input set of codes; set up lbl,tape3,scriptdirs,etc
 source $2
