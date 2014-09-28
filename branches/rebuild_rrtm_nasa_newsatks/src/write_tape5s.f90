@@ -318,7 +318,7 @@ program write_tape5s
       tape5 = 'tape5-T'//trim(fnum(index))//'-n'//trim(fnum(ieta))
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
-      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmapper(1:7,ieta),rec_2_1_lo)      
+      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmapper(1:7,ieta),rec_2_1_hi)      
       do ilev=levdup(1),nlev
         write(iunit,'(1P,G15.7,G10.5,13X,I2,0P)') press(ilev),temp(ilev,itemp),ipthak
         write(iunit,'(1P,8G15.7,0P)') wmapper(1:7,ilev,itemp,ieta),broad(press(ilev),&
@@ -334,7 +334,7 @@ program write_tape5s
       tape5 = 'tape5nc-T'//trim(fnum(index))//'-n'//trim(fnum(ieta))
       iunit=20
       open(iunit,FILE=tape5,FORM='FORMATTED')
-      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmappee(1:7,ieta),rec_2_1_lo)      
+      call write_t5hdr(iunit,wavenumber1,wavenumber2,dvout,xucmappee(1:7,ieta),rec_2_1_hi)      
       do ilev=levdup(1),nlev
         write(iunit,'(1P,G15.7,G10.5,13X,I2,0P)') press(ilev),temp(ilev,itemp),ipthak
         write(iunit,'(1P,8G15.7,0P)') wmappee(1:7,ilev,itemp,ieta),broad(press(ilev),&
