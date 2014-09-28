@@ -51,10 +51,10 @@ echo SCRIPT SVN INFO: >> build_info.txt
 echo `svn info ${scriptdir}` >> build_info.txt
 
 #Create a link for TAPE3 for lblrtm_f90 run
-\ln ${lblver} lblrtm_f90
-\ln -s ${t3dir}/TAPE3 TAPE3
-\cp ${t3dir}/TAPE6 tape3_info.txt
-\cp ${scriptdir}/PRESSURE.PROFILE .
+ln -s ${lblver} lblrtm_f90
+ln -s ${t3dir}/TAPE3 TAPE3
+cp ${t3dir}/TAPE6 tape3_info.txt
+cp ${scriptdir}/PRESSURE.PROFILE .
 
 echo Writing TAPE5s
 #Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
