@@ -17,6 +17,9 @@
 #Source input set of codes; set up lbl,tape3,scriptdirs,etc
 source $2
 
+#cd to the parent run directory; all runs will be launched out of this directory
+cd $rdir
+
 # First, ensure all codes are compiled in the src directory which is up and over from objdir
 #set cdir=`pwd`
 #cd $exedir; cd ../src/; make -f make_fortran_codes
