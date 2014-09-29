@@ -267,7 +267,7 @@ c     be implemented in the case for 2 major gases.
                  COLUMFAC = 1.E20/COLUMFAC
               ENDIF
 
-           XLSPACE = FLOAT(NLINE(LEVEL)) + 0.5
+           XLSPACE = DBLE(NLINE(LEVEL)) + 0.5
            DO 3337 IG = 1, 16
               VCONTTOT(IG) = 0.
               J0MIN(IG) = G0(IG)*XLSPACE + 1

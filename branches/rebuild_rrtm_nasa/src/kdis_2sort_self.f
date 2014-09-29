@@ -274,7 +274,7 @@ C     order. XCONT is sorted according to XKL.
 
            CALL SORT2(NLINE(LEVEL),XKL,XCONT)
 
-           XLSPACE = FLOAT(NLINE(LEVEL)) + 0.5
+           XLSPACE = DBLE(NLINE(LEVEL)) + 0.5
            DO 3337 IG = 1, 16
               VCONTTOT(IG) = 0.
               J0MIN(IG) = G0(IG)*XLSPACE + 1

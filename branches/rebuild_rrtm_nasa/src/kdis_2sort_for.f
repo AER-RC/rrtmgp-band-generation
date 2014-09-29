@@ -301,7 +301,7 @@ c                 COLUMFAC = 1.E20/COLUMFAC
 c              ENDIF
 c           columfac = wk(igas_on)
 c           columfac = 1.e20/columfac
-           XLSPACE = FLOAT(NLINE(LEVEL)) + 0.5
+           XLSPACE = DBLE(NLINE(LEVEL)) + 0.5
            DO 3337 IG = 1, 16
               VCONTTOT(IG) = 0.
               J0MIN(IG) = G0(IG)*XLSPACE + 1
