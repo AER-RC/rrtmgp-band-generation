@@ -290,7 +290,6 @@ c              ENDIF
               VCONTAVG(IG) = VCONTTOT(IG)/DBLE(NPTS0(IG))
               CONTAVG(IG) = VCONTAVG(IG)
               ABSCOEF = CONTAVG(IG)*COLUMFAC
-              print *,ig,abscoef
               WRITE(IBIN) ABSCOEF              
  3337      CONTINUE
 

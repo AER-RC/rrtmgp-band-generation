@@ -34,16 +34,16 @@ C     the lower atmosphere.
 
       OPEN(20,FILE='DATA.KG',FORM='FORMATTED')
 
-      write(20,8000)
-      write(20,8001)
-      write(20,8002) 
-      write(20,8003)
-      write(20,8004) 
-      write(20,8005)
-      write(20,8006)
-      write(20,8007)
-      write(20,8009)
-      write(20,8008)
+c      write(20,8000)
+c      write(20,8001)
+c      write(20,8002) 
+c      write(20,8003)
+c      write(20,8004) 
+c      write(20,8005)
+c      write(20,8006)
+c      write(20,8007)
+c      write(20,8009)
+c      write(20,8008)
 
 c      write(20,8009)
 
@@ -190,14 +190,14 @@ cSet up the format for the file to be fed into RRTM.
 
  8008 FORMAT('       CHARACTER*8 HVRKG')
  8009 FORMAT('       COMMON /K1_2/ KA_2,KB_2')
- 8010  FORMAT('      DATA (KA_1(JT,',I2,',',I2,'),JT=1,5) /')
+ 8010  FORMAT('      DATA (KA(JT,',I2,',',I2,'),JT=1,5) /')
  8011   FORMAT('     &',1P,4(E10.4,','),E10.4,0P,'/')
- 8020    FORMAT('      DATA (KB_1(JT,',I2,',',I2,'),JT=1,5) /')
+ 8020    FORMAT('      DATA (KB(JT,',I2,',',I2,'),JT=1,5) /')
 
- 9010 FORMAT('      DATA ((KA_2(JS,JT,',I2,',',I2,'),JS=1,9),JT=1,5) /')
+ 9010 FORMAT('      DATA ((KA(JS,JT,',I2,',',I2,'),JS=1,9),JT=1,5) /')
  9011 FORMAT('     &',1P,6(E10.4,','),0P)
  9012 FORMAT('     &',1P,2(E10.4,','),E10.4,0P,'/')
- 9020 FORMAT('      DATA ((KB_2(JS,JT,',I2,',',I2,'),JS=1,5),JT=1,5) /')
+ 9020 FORMAT('      DATA ((KB(JS,JT,',I2,',',I2,'),JS=1,5),JT=1,5) /')
  9021 FORMAT('     &',1P,5(E10.4,','),0P)
  9022 FORMAT('     &',1P,4(E10.4,','),E10.4,0P,'/')
 

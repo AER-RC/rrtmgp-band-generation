@@ -36,15 +36,15 @@ c      REAL KB_2(9,5,13:59,16)
 
       read (*,par)
 
-      OPEN(20,FILE='kg_planck.f',FORM='FORMATTED')
+      OPEN(20,FILE='DATA.PLANCK',FORM='FORMATTED')
 
-      write(20,8000)
+c      write(20,8000)
 
       if (igas2_l .eq. 0) then
                   contfile='KG_bbp1_n09'
-		  write(20,9001)
-		  write(20,9002) 
-		  write(20,8004)
+c		  write(20,9001)
+c		  write(20,9002) 
+c		  write(20,8004)
                   open(14,file=contfile,form='formatted')
                   ii = 9
                   write(20,9010) 
@@ -57,9 +57,9 @@ c      REAL KB_2(9,5,13:59,16)
                   write(20,8051) fracref(13:16)
 
       else
-	 write(20,8001)
-	 write(20,8002) 
-	 write(20,8004)
+c	 write(20,8001)
+c	 write(20,8002) 
+c	 write(20,8004)
          do 625 ii=1,9 
             contfile = 'KG_bbp1_n'//fnum(ii)
             open(14,file=contfile,form='formatted')

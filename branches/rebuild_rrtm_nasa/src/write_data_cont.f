@@ -36,13 +36,13 @@ c      REAL KB_2(9,5,13:59,16)
      &     '90','91','92','93','94','95','96','97','98','99'/
 
 
-      OPEN(20,FILE='kg_cont.f',FORM='FORMATTED')
+      OPEN(20,FILE='DATA.CONT',FORM='FORMATTED')
 
-      write(20,8000)
-      write(20,8001)
-      write(20,8002) 
+c      write(20,8000)
+c      write(20,8001)
+c      write(20,8002) 
 c      write(20,8003)
-      write(20,8004)
+c      write(20,8004)
       do 800 ii=1,4
          if (ii .eq. 1) contfile='KG_bbf1'
          if (ii .eq. 2) contfile='KG_bbf2'
