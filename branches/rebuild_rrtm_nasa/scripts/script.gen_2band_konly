@@ -20,35 +20,36 @@ source $2
 
 #cd to the parent run directory; all runs will be launched out of this directory
 if ( ! -d $rdir ) then
-  echo "Making run directory $rdir"
+  echo "Making parent run directory $rdir"
   mkdir $rdir
 endif
-cd $rdir
+if ( ! -d $rdir/$1 ) then
+  echo "Making individual build directory $rdir/$1"
+  mkdir $dir/$1
+else
+  echo "STOP: CURRENT DIRECTORY EXISTS! MANUALLY DELETE"
+  exit
+endif
+
+#Copy files to the directories that need it.
+cp $2 $1/input_codes
+cp $3 $1/input_param
+
+# Moving to build directory
+cd $rdir/$1
 
 # First, ensure all codes are compiled in the src directory which is up and over from objdir
 #set cdir=`pwd`
 #cd $exedir; cd ../src/; make -f make_fortran_codes
 #cd $cdir
 
-#Create a directory for the band you are interested in
-mkdir $1
-echo Create Directory: $1
-
-#Copy files to the directories that need it.
-\cp $2 $1/input_codes
-\cp $3 $1/input_param
-
-#Now commence work in the new band directory
-cd $1
-
 #Create file that contains some information output
 echo START TIME: `date` > build_info.txt
-
 echo LBLRTM_VERSION: ${lblver} >> build_info.txt
 echo LINEFILE_VERSION: ${t3dir}/TAPE3 >> build_info.txt
 echo SCRIPTDIRECTORY: ${scriptdir} >> build_info.txt
 echo SCRIPT SVN INFO: >> build_info.txt
-echo `svn info ${scriptdir}` >> build_info.txt
+cat ${scriptdir}/svn_info.txt >> build_info.txt
 
 #Create a link for TAPE3 for lblrtm_f90 run
 ln -s ${lblver} lblrtm_f90
