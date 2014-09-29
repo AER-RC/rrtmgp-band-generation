@@ -17,7 +17,7 @@ source $1
 #Generate TAPE5s for self-continuum
 
 head -7 tape5-T03-n09 > tmp
-cat ${scriptdir}/template_self > t5_self
+cat ${scriptdir}/template_self tmp > t5_self
 set tape5od = t5_self
 rm TAPE5
 cp $tape5od TAPE5
