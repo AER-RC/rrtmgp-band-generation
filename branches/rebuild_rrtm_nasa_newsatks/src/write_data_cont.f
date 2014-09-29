@@ -1,4 +1,4 @@
-      PROGRAM WRITE_DATA_KMINOR
+      PROGRAM WRITE_DATA_CONT
       
       CHARACTER*2 FNUM(99)
       CHARACTER*50 KG,contfile
@@ -12,14 +12,18 @@ C     which absorption coefficient data is stored.  KB is the corre-
 C     sponding array of absorption coefficients for above 
 C     the lower atmosphere.
       parameter (mg = 16)
+      parameter (ninc=10)
+
 c      REAL KA_1(5,13,16)
 c      REAL KB_1(5,13:59,16)
 c      REAL KA_2(9,5,13,16)
 c      REAL KB_2(9,5,13:59,16)
       REAL FORREF(4,mg)
       REAL S296(mg),s260(mg)
+      REAL SELF_INTERP(mg,ninc)
 
-
+      DATA TSTART/245.6/
+      DATA TINC/7.2/
       DATA FNUM/'01','02','03','04','05','06','07','08','09',
      &     '10','11','12','13','14','15','16','17','18','19',
      &     '20','21','22','23','24','25','26','27','28','29',
@@ -39,7 +43,6 @@ c      REAL KB_2(9,5,13:59,16)
       write(20,8002) 
       write(20,8003)
       write(20,8004)
-
       do 800 ii=1,4
          if (ii .eq. 1) contfile='KG_bbf1'
          if (ii .eq. 2) contfile='KG_bbf2'
@@ -49,6 +52,7 @@ c      REAL KB_2(9,5,13:59,16)
                   write(20,8010) ii
                   do 600 iig=1,16
                   read(14,*) forref(ii,iig)
+                  forref(ii,iig) = 1.e20*forref(ii,iig)
  600              continue
                   close(14)
                   write(20,8050) forref(ii,1:6)
@@ -61,6 +65,7 @@ c      REAL KB_2(9,5,13:59,16)
                   write(20,8030)
                   do 1600 iig=1,16
                   read(14,*) s296(iig)
+                  s296(iig) = 1.e20*s296(iig)
  1600              continue
                    close(14)
                   write(20,8050) s296(1:6)
@@ -72,12 +77,22 @@ c      REAL KB_2(9,5,13:59,16)
                   write(20,8035) 
                   do 1800 iig=1,16
                   read(14,*) s260(iig)
+                  s260(iig)=1.e20*s260(iig)
  1800              continue
                    close(14)
                   write(20,8050) s260(1:6)
                   write(20,8050) s260(7:12)
                   write(20,8051) s260(13:16)                   
 
+c Add interpolation
+                  do j=1,mg
+                    do k=1,ninc
+                      tnew=tstart+tinc*float(k-1)
+                      tfac=(tnew-296.)/(260.-296.)
+                      self_interp(j,k)=s296(j)*(s260(j)/s296(j))^tfac(k)
+                      print*,'ig,ik,val',j,k,self_interp(j,k)
+                    end do
+                  end do
                   close(20)
 
  8000 FORMAT('       PARAMETER (MG=16,NMINOR=7)')
