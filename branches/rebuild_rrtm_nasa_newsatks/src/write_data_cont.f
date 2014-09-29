@@ -41,7 +41,7 @@ c      REAL KB_2(9,5,13:59,16)
       write(20,8000)
       write(20,8001)
       write(20,8002) 
-      write(20,8003)
+c      write(20,8003)
       write(20,8004)
       do 800 ii=1,4
          if (ii .eq. 1) contfile='KG_bbf1'
@@ -62,44 +62,57 @@ c      REAL KB_2(9,5,13:59,16)
 
        contfile = 'KG_bbs1'
        open(14,file=contfile,form='formatted')
-                  write(20,8030)
+c                  write(20,8030)
                   do 1600 iig=1,16
                   read(14,*) s296(iig)
                   s296(iig) = 1.e20*s296(iig)
  1600              continue
                    close(14)
-                  write(20,8050) s296(1:6)
-                  write(20,8050) s296(7:12)
-                  write(20,8051) s296(13:16)                   
+c                  write(20,8050) s296(1:6)
+c                  write(20,8050) s296(7:12)
+c                  write(20,8051) s296(13:16)                   
 
        contfile = 'KG_bbs2'
        open(14,file=contfile,form='formatted')
-                  write(20,8035) 
+c                  write(20,8035) 
                   do 1800 iig=1,16
                   read(14,*) s260(iig)
                   s260(iig)=1.e20*s260(iig)
  1800              continue
                    close(14)
-                  write(20,8050) s260(1:6)
-                  write(20,8050) s260(7:12)
-                  write(20,8051) s260(13:16)                   
+c                  write(20,8050) s260(1:6)
+c                  write(20,8050) s260(7:12)
+c                  write(20,8051) s260(13:16)                   
 
 c Add interpolation
                   do j=1,mg
                     do k=1,ninc
                       tnew=tstart+tinc*float(k-1)
                       tfac=(tnew-296.)/(260.-296.)
-                      self_interp(j,k)=s296(j)*(s260(j)/s296(j))^tfac(k)
-                      print*,'ig,ik,val',j,k,self_interp(j,k)
+                 self_interp(j,k)=s296(j)*(s260(j)/s296(j))**(tfac)
                     end do
                   end do
-                  close(20)
+	do i=1,mg
+	 write(20,8060)
+     &     '      DATA (SELFREF(JT,',i,'),JT=1,10)  /'
+	 write(20,8061) 
+     &      '&',self_interp(i,1),',',   
+     &       self_interp(i,2),',',self_interp(i,3),',',
+     &      self_interp(i,4),',',
+     &	    self_interp(i,5),','
+         write(20,8062)
+     &      '&',self_interp(i,6),',', 
+     &	    self_interp(i,7),',',self_interp(i,8),',',
+     &      self_interp(i,9),',',self_interp(i,10),'/'
+	end do
+	    close(20)
 
  8000 FORMAT('       PARAMETER (MG=16,NMINOR=7)')
  8001 FORMAT('       REAL FORREF(4,MG)')
- 8002 FORMAT('       REAL S296(MG)')
- 8003 FORMAT('       REAL S260(MG)')
- 8004 FORMAT('       COMMON /K_CONT/ FORREF, S296, S260')
+c 8002 FORMAT('       REAL S296(MG)')
+c 8003 FORMAT('       REAL S260(MG)')
+ 8002 FORMAT('       REAL SELFREF(10,MG)')
+ 8004 FORMAT('       COMMON /K_CONT/ FORREF, SELFREF')
 
  8010  FORMAT('      DATA (FORREF(',i1,',IG),IG=1,16) /')
  8015  FORMAT('      DATA (FORREF(',i1,',IG),IG=1,16) /')
@@ -112,5 +125,8 @@ c Add interpolation
  8050  FORMAT('     &',1P,6(E10.4,','),0P)
  8051  FORMAT('     &',1P,3(E10.4,','),E10.4,0P,'/')
 
+ 8060 FORMAT(a23,i2,a13)
+ 8061 FORMAT(5x,a1,5(1x,1P,e11.5,a1))
+ 8062 FORMAT(5x,a1,5(1x,1P,e11.5,a1))
       END
 
