@@ -1,0 +1,15 @@
+; Determine 7 scale factors
+scalefacs=[1.0,2.0,1.0,1.0,1.0,1.0,1.0]
+
+; Name directories/paths for output
+rrtmpdir='hahajunk_dir_dco2_rrtm'
+lblpdir='hahajunk_dir_dco2_lbl'
+
+; Header for files
+filehdr='$Double CO2'
+
+; Save scaled profiles into a file
+atmfile='garand_profiles_doubleco2.sav'
+
+; Split into key species or not? (0=yes; 1=no)
+splitprof=0

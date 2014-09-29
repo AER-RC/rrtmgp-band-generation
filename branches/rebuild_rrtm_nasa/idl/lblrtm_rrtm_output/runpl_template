@@ -1,0 +1,17 @@
+
+lbl_dir  = '/Users/jdelamere/Projects-AER/p1770/garand_validation_atmospheres/lbl_v5.21_aer_jpl_hitran_96_v2.0_keyspecies/'
+plid = 'RRTM_v3.0_LBL_v5.21_PL_KEY'
+
+bandnum = '3'
+lbl_dir  = '/Users/jdelamere/Projects-AER/p1770/garand_validation_atmospheres/lbl_v5.21_aer_jpl_hitran_96_v2.0_keyspecies/'
+rrtm_dir = '/Users/jdelamere/Projects-AER/p1770/garand_validation_atmospheres/rrtm_v3.0_newplanck_keyspecies/rrtm_gb'+bandnum
+generate_rrtm_lbl_plots,rrtm_dir,lbl_dir,bandnum,plid
+
+bandnum = '4'
+lbl_dir  = '/Users/jdelamere/Projects-AER/p1770/garand_validation_atmospheres/lbl_v5.21_aer_jpl_hitran_96_v2.0_keyspecies/'
+rrtm_dir = '/Users/jdelamere/Projects-AER/p1770/garand_validation_atmospheres/rrtm_v3.0_newplanck_keyspecies/rrtm_gb'+bandnum
+generate_rrtm_lbl_plots,rrtm_dir,lbl_dir,bandnum,plid
+
+cmd='gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=ALLSTATS_'+plid+'.pdf STATS_*pdf'
+spawn,cmd
+

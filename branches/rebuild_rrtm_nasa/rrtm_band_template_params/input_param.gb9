@@ -5,6 +5,5 @@
  igas_minor_l(7,1) = 0
  igas_minor_u(1,1) = 0  igas_minor_u(2,1) = 0 igas_minor_u(3,1) = 0
  igas_minor_u(4,1) = 1 igas_minor_u(5,1) = 0 igas_minor_u(6,1) = 0
- igas_minor_u(7,1) = 0
- nmol=7/	
+ igas_minor_u(7,1) = 0/
  &iplanck isortplanck(1) = 3 isortplanck(2) = 41 /

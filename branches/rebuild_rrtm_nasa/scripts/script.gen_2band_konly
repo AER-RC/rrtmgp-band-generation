@@ -9,10 +9,26 @@
 
 #INPUT:
 #  DIRNAME ($1): name of the directory you want to create to store all output
-#  i.e. script.gen_2band_konly build_gb5
-#  INPUT CODE FILENAME ($2): Name of file that contains environment variables to be
+#  i.e. script.gen_2band_konly build_gb5 input_codes input_params 
+#  INPUT CODE FILENAME ($2): Name of file that contains environment variables to be used;
+#    sourced immediately.  Can be just a filename or a path/filename.
 #  INPUT PARAM FILENAME ($3): Name of namelist file that describes the bands
-#  used in these scripts. 
+#  used in these scripts. Can be just a filename or a path/filename.
+
+#Source input set of codes; set up lbl,tape3,scriptdirs,etc
+source $2
+
+#cd to the parent run directory; all runs will be launched out of this directory
+if ( ! -d $rdir ) then
+  echo "Making run directory $rdir"
+  mkdir $rdir
+endif
+cd $rdir
+
+# First, ensure all codes are compiled in the src directory which is up and over from objdir
+#set cdir=`pwd`
+#cd $exedir; cd ../src/; make -f make_fortran_codes
+#cd $cdir
 
 #Create a directory for the band you are interested in
 mkdir $1
@@ -21,9 +37,6 @@ echo Create Directory: $1
 #Copy files to the directories that need it.
 \cp $2 $1/input_codes
 \cp $3 $1/input_param
-
-#Source input set of codes; set up lbl,tape3,scriptdirs,etc
-source $2
 
 #Now commence work in the new band directory
 cd $1
@@ -38,22 +51,20 @@ echo SCRIPT SVN INFO: >> build_info.txt
 echo `svn info ${scriptdir}` >> build_info.txt
 
 #Create a link for TAPE3 for lblrtm_f90 run
-\ln ${lblver} lblrtm_f90
-\ln -s ${t3dir}/TAPE3 TAPE3
-\cp ${t3dir}/TAPE6 tape3_info.txt
-\cp ${scriptdir}/PRESSURE.PROFILE .
+ln -s ${lblver} lblrtm_f90
+ln -s ${t3dir}/TAPE3 TAPE3
+cp ${t3dir}/TAPE6 tape3_info.txt
+cp ${scriptdir}/PRESSURE.PROFILE .
 
 echo Writing TAPE5s
 #Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
-#Includes all absorbers, including the H20 continuum
-${exedir}/write_tape5 < input_param
-
-#Generate TAPE5s for the 5 T(ref) lower/upper atmospheres.
-#Do NOT include the H20 continuum
-${exedir}/write_tape5_nc < input_param
+#Generates mapper (tape5-*) and mappee (tape5nc-)
+#Mapper includes all absorbers, including the H20 continuum
+#Mappeee excludes the H2O continuum.
+${exedir}/write_tape5s < input_param
 
 #Generate TAPE5s for T(ref) and T(ref) - 15 for lower/upper atmospheres.
-${exedir}/write_tape5_minor < input_param
+#${exedir}/write_tape5_minor < input_param
 
 #LOWER ATMOSPHERE
 #Each troposphere run (P > 100mb) has 13 layers.  Generate the 
@@ -90,14 +101,15 @@ while ($jl < 10)
 #Run LBLRTM_F90 without the WV continuum and without all absorbers except
 #key species
 	\cp ${tape5nc} TAPE5
-        lblrtm_f90
+  ./lblrtm_f90
+
 #LBLRTM_F90 generates ODint_ files for each layer. Move
 #these to another filename
 	${scriptdir}/script.mv_files mv ODint NCint
 #Run LBLRTM_F90 with all the absorbers including continua except WV.
 	\rm TAPE5
 	\cp ${tape5od} TAPE5
-	lblrtm_f90
+	./lblrtm_f90
 	${exedir}/kdis_2sort_l < input_param 
 #The output of absorption coefficients in file CK_ABS.DAT
 #to reference file
@@ -180,11 +192,11 @@ while ($ju < 10)
 	endif
         \rm TAPE5
 	\cp ${tape5nc} TAPE5
-	lblrtm_f90
+	./lblrtm_f90
 	${scriptdir}/script.mv_files mv ODint NCint 
 	\rm TAPE5
 	\cp ${tape5od} TAPE5
-	lblrtm_f90
+	./lblrtm_f90
 	${exedir}/kdis_2sort_u < input_param
 	\mv -f CK_ABS.DAT ${kgfile}
 
@@ -243,6 +255,11 @@ if ($icalcplanck == 1) then
 endif
 
 echo Finish Absorption Coefficients
+
+if ($icalccontnm == 1) then
+    echo Start continuum building
+    ${scriptdir}/script.gen_contin $2
+endif
 
 echo FINISH TIME: `date` >> build_info.txt
 

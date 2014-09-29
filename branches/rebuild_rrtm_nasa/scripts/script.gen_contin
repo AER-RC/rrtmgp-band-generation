@@ -1,0 +1,74 @@
+#!/bin/csh -f
+#Modified: Jennifer Delamere, Aug 2014 
+#Project: RRTM LW REBUILD FOR NASA
+#Created: Jennifer Delamere January 1999
+
+#DESCRIPTION:
+#  Script to calculate k-distributions for water vapor self-continuum
+# (foreign adn self)
+
+#INPUT:
+#INPUT CODE FILENAME ($1): Name of file that contains environment variables to be used;
+#    sourced immediately.  Can be just a filename or a path/filename.
+
+#Source input set of codes; set up lbl,tape3,scriptdirs,etc
+source $1
+
+#Generate TAPE5s for self-continuum
+
+if ( -e tape5-T03-n05) then
+  head -7 tape5-T03-n09 > tmp
+else if ( -e tape5-T03-n09) then
+  head -7 tape5-T03-n09 > tmp
+else 
+  echo "The appropriate t5 for creating self-continuum does not exist."
+endif
+
+cat ${scriptdir}/template_self tmp > t5_self
+set tape5od = t5_self
+rm TAPE5
+cp $tape5od TAPE5
+./lblrtm_f90
+
+set cnttmp = ( "296" "260" )
+foreach ilev ( 1 2 )
+  rm self.coef
+  cp ${scriptdir}/self.coef.$cnttmp[$ilev] self.coef
+  set kgfile = KG_bbs$ilev
+  echo " &lev level=${ilev}/" > tmp
+  cat input_param tmp > input_param_for
+  rm tmp
+  ${exedir}/kdis_2sort_self < input_param_self
+  rm input_param_self
+  mv -f CK_ABS_FOR.DAT ${kgfile}		
+end	
+
+#Generate TAPE5s for foreign-continuum
+if ( -e tape5-T03-n05) then
+  head -7 tape5-T03-n09 > tmp
+else if ( -e tape5-T03-n09) then
+  head -7 tape5-T03-n09 > tmp
+else 
+  echo "The appropriate t5 for creating self-continuum does not exist."
+endif
+
+cat tmp ${scriptdir}/template_foreign > t5_foreign
+set tape5od = t5_foreign
+rm TAPE5
+cp ${tape5od} TAPE5
+./lblrtm_f90
+
+set cnttmp = ( "296" "260" "224" "260")
+foreach ilev ( 1 2 3 4 )
+  rm for.coef
+  cp ${scriptdir}/for.coef.$cnttmp[$ilev] for.coef
+  set kgfile = KG_bbf$ilev
+  echo " &lev level=${ilev}/" > tmp
+  cat input_param tmp > input_param_for
+  rm tmp
+  ${exedir}/kdis_2sort_for < input_param_for
+  rm input_param_for
+  mv -f CK_ABS_FOR.DAT ${kgfile}		
+end	
+
+${exedir}/write_data_cont 
