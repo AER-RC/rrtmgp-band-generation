@@ -103,7 +103,7 @@ C  ************ START OF EXECUTABLE STATEMENTS **********
       do 333 ii = 1, 300
          read(is,*) scoe(ii)
          do 332 jj = 1, 10
-            scoef(10*(ii-1) + jj) = scoe(ii-1) + 0.1 * float(jj) *
+            scoef(10*(ii-1) + jj) = scoe(ii-1) + 0.1 * dble(jj) *
      &           (scoe(ii) - scoe(ii-1))
  332     continue
  333  continue

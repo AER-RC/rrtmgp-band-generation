@@ -1,4 +1,4 @@
-      PROGRAM KDIS_2SORT_MINOR
+      PROGRAM KDIS_2SORT_FOR
 C***************************************************
 cProgram version created by: Jennifer Delamere January, 1999
 cModified from routine received from E. Mlawer, AER, Inc.
@@ -114,7 +114,7 @@ C  ************ START OF EXECUTABLE STATEMENTS **********
       do 333 ii = 1, 300
          read(is,*)fcoe(ii)
          do 332 jj = 1, 10
-            fcoef(10*(ii-1) + jj) = fcoe(ii-1) + 0.1 * float(jj) *
+            fcoef(10*(ii-1) + jj) = fcoe(ii-1) + 0.1 * dble(jj) *
      &           (fcoe(ii) - fcoe(ii-1))
  332     continue
  333  continue

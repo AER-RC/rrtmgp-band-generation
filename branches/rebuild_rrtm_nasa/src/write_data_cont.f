@@ -87,7 +87,7 @@ c                  write(20,8051) s260(13:16)
 c Add interpolation
                   do j=1,mg
                     do k=1,ninc
-                      tnew=tstart+tinc*float(k-1)
+                      tnew=tstart+tinc*dble(k-1)
                       tfac=(tnew-296.)/(260.-296.)
                  self_interp(j,k)=s296(j)*(s260(j)/s296(j))**(tfac)
                     end do
