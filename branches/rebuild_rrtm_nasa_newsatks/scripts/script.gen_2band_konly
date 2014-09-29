@@ -256,6 +256,11 @@ endif
 
 echo Finish Absorption Coefficients
 
+if ($icalccontnm == 1) then
+    echo Start continuum building
+    ${scriptdir}/script.gen_contin $2
+endif
+
 echo FINISH TIME: `date` >> build_info.txt
 
 
