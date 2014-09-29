@@ -36,7 +36,7 @@ foreach ilev ( 1 2 )
   cp ${scriptdir}/self.coef.$cnttmp[$ilev] self.coef
   set kgfile = KG_bbs$ilev
   echo " &lev level=${ilev}/" > tmp
-  cat input_param tmp > input_param_for
+  cat input_param tmp > input_param_self
   rm tmp
   ${exedir}/kdis_2sort_self < input_param_self
   rm input_param_self
