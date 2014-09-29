@@ -300,7 +300,7 @@ c           columfac = 1.e20/columfac
               DO 3338 IELI=J0MIN(IG),J0MAX(IG)
                  VCONTTOT(IG)=VCONTTOT(IG)+XCONT(IELI)
  3338         CONTINUE
-              VCONTAVG(IG) = VCONTTOT(IG)/DFLOAT(NPTS0(IG))
+              VCONTAVG(IG) = VCONTTOT(IG)/DBLE(NPTS0(IG))
               CONTAVG(IG) = VCONTAVG(IG)
 c              ABSCOEF = CONTAVG(IG)*COLUMFAC
               ABSCOEF = CONTAVG(IG)*WT(IG)/TOTPLANK

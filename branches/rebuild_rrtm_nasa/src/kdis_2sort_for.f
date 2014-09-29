@@ -276,7 +276,7 @@ C.. OF THE PLANCK INTEGRAL
                 vv = v1 + (iline-1)*delv
                 inds = int(vv)
 c                print*,inds,fcoef(inds),fcoef(inds+1)
-                fr = vv - float(inds)
+                fr = vv - dble(inds)
                 XCONT(ILINE-J1+1) = fcoef(inds) + fr * 
      &               (fcoef(inds+1)-fcoef(inds))
 c                print*,'xc', XCONT(ILINE-J1+1)
@@ -312,7 +312,7 @@ c           columfac = 1.e20/columfac
               DO 3338 IELI=J0MIN(IG),J0MAX(IG)
                  VCONTTOT(IG)=VCONTTOT(IG)+XCONT(IELI)
  3338         CONTINUE
-              VCONTAVG(IG) = VCONTTOT(IG)/DFLOAT(NPTS0(IG))
+              VCONTAVG(IG) = VCONTTOT(IG)/DBLE(NPTS0(IG))
               CONTAVG(IG) = VCONTAVG(IG)
 c              ABSCOEF = CONTAVG(IG)*COLUMFAC
               ABSCOEF = CONTAVG(IG)

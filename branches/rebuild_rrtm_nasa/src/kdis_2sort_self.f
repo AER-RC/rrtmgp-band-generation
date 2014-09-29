@@ -262,7 +262,7 @@ C.. OF THE PLANCK INTEGRAL
                 XKL(ILINE-J1+1) = XKL(ILINE)
                 vv = v1 + (iline-1)*delv
                 inds = int(vv)
-                fr = vv - float(inds)
+                fr = vv - dble(inds)
                 XCONT(ILINE-J1+1) = scoef(inds) + fr * 
      &               (scoef(inds+1)-scoef(inds))
 4020       CONTINUE
@@ -285,7 +285,7 @@ C     order. XCONT is sorted according to XKL.
               DO 3338 IELI=J0MIN(IG),J0MAX(IG)
                  VCONTTOT(IG)=VCONTTOT(IG)+XCONT(IELI)
  3338         CONTINUE
-              VCONTAVG(IG) = VCONTTOT(IG)/DFLOAT(NPTS0(IG))
+              VCONTAVG(IG) = VCONTTOT(IG)/DBLE(NPTS0(IG))
               CONTAVG(IG) = VCONTAVG(IG)
               ABSCOEF = CONTAVG(IG)
               WRITE(IBIN,*) ABSCOEF              
