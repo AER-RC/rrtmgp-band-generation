@@ -24,7 +24,7 @@ else
   echo "The appropriate t5 for creating self-continuum does not exist."
 endif
 
-cat ${scriptdir}/template_self tmp > t5_self
+cat tmp ${scriptdir}/template_self > t5_self
 set tape5od = t5_self
 rm TAPE5
 cp $tape5od TAPE5
@@ -40,7 +40,7 @@ foreach ilev ( 1 2 )
   rm tmp
   ${exedir}/kdis_2sort_self < input_param_self
   rm input_param_self
-  mv -f CK_ABS_FOR.DAT ${kgfile}		
+  mv -f CK_ABS_for.DAT ${kgfile}		
 end	
 
 #Generate TAPE5s for foreign-continuum
