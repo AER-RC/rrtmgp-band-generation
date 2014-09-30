@@ -1,0 +1,93 @@
+#!/bin/bash
+# SHELL SCRIPT: script.run_garand_lbl
+# $1: input file containing environment variables that define various directories, etc.
+  echo Sourcing $1
+  source $1
+
+  if [ ${runband[0]} == "ALL" ]; then
+    runband=( 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 )
+  fi
+  echo Running bands ${runband[@]}
+
+  if [ -z "${nprofbeg}" ];then
+    nprofbeg=1
+  fi
+  if [ -z "${nprofend}" ];then
+    nprofbeg=42
+  fi
+
+  if [ ! -d "${resdir}" ]; then
+    mkdir -p $resdir
+  fi  
+  cp $1 ${resdir}
+  cd ${resdir}
+
+  for ich in ${runband[@]}; do
+    echo Running Band ${ich}
+    chdir=lbl_gb${ich}
+
+    if [ ! -d ${chdir} ]; then
+      mkdir $chdir
+    fi
+
+    cd ${chdir}
+    cp ../$1 .
+    ln -fs ${t3exe} TAPE3
+    ln -fs ${lblexe} lblrtm_f90_sgl
+    ln -fs ${radsumexe} radsum_f90_sgl
+
+
+    iprof=${nprofbeg}
+    while [ $iprof -le ${nprofend} ]; do
+
+      echo Running OD ${iprof}
+
+      ln -sfn ${infiledir}/${chdir}/TAPE5.GARANDOD_${iprof}_${ich} TAPE5
+      ./lblrtm_f90_sgl
+      mv -f TAPE6 TAPE6.GARANDOD_${iprof}_${ich}
+      mv -f TAPE7 TAPE7.GARANDOD_${iprof}_${ich}
+
+      echo Running RD ${iprof}
+      rm TAPE5
+      ln -sfn ${infiledir}/${chdir}/TAPE5.GARANDRD_${iprof}_${ich} TAPE5
+      ./lblrtm_f90_sgl
+
+      echo Running Radsum ${iprof}
+
+      ln -sfn ${infiledir}/${chdir}/RADINIT.GARAND_${iprof}_${ich} RADINIT
+      ./radsum_f90_sgl
+      mv -f flxupdn.dat OUTPUT_LBLRTM.GARAND_${iprof}_${ich}
+
+      rm -f OD*
+      rm -f TAPE31
+      rm -f TAPE32
+      rm -f TAPE33
+      rm -f TAPE61
+      rm -f TAPE62
+      rm -f TAPE63
+      rm -f TAPE5
+      rm -f TAPE6
+      rm -f TAPE9
+      rm -f TAPE10
+      rm -f TAPE11
+      rm -f TAPE12
+
+      let iprof += 1
+    done
+    `echo date` 
+    rm -f OD*
+    rm -f TAPE31
+    rm -f TAPE32
+    rm -f TAPE33
+    rm -f TAPE61
+    rm -f TAPE62
+    rm -f TAPE63
+    rm -f TAPE5
+    rm -f TAPE6
+    rm -f TAPE9
+    rm -f TAPE10
+    rm -f TAPE11
+    rm -f TAPE12
+    let ich += 1
+    cd ..
+  done

@@ -1,0 +1,15 @@
+# Bands to run
+# Either enter an array of bands to run or enter a single ALL to run them all
+
+# Band 0 produces output for 10-3250; Band 99 produces band output in one file; Otherwise put band numbers.
+#runband=( 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 99 )
+runband=( "ALL" )
+
+# Directory to put results
+resdir=/project/p1770/jdelamer/garand_validation_atmospheres_output/garand_profiles/aer_rrtm_v3.0_release-JUNK
+
+# RRTM executable and directory
+rrtmexe=/project/p1770/jdelamer/AER_CODES/rrtm_versions/aer_rrtm_v3.0_release/rrtm_linux_v3.0
+
+# Set rrtm_input_file directories
+infiledir=/project/p1770/jdelamer/garand_validation_atmospheres_input/garand_profiles

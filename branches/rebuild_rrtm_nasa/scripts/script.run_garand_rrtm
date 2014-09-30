@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# $1: input_codes files containing paths for script directories, etc.
+source $1
+
+if [ ${runband[0]} == "ALL" ]; then
+  runband=( 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 99 )
+fi
+echo Running bands ${runband[@]}
+
+if [ ! -d ${resdir} ]; then
+  mkdir ${resdir}
+fi
+
+cp script.run_garand_rrtm $resdir/.
+
+cd $resdir
+
+for numband in ${runband[@]}; do
+    echo Running Band ${numband}
+
+    resdirl=rrtm_gb${numband}
+    if [ ! -d ${resdirl} ]; then
+       mkdir ${resdirl}
+    fi
+    cd ${resdirl}
+
+    ln -sfn ${rrtmexe} rrtm_f90_sgl
+
+    nprof=1
+    while [ $nprof -le 42 ]; do
+	echo Calculating RRTM PROFILE ${nprof}
+	if [ -e INPUT_RRTM ]; then
+          rm INPUT_RRTM
+        fi
+	if [ -e OUTPUT_RRTM ]; then
+          rm OUTPUT_RRTM
+        fi
+	\ln -sfn ${infiledir}/${resdirl}/INPUT_RRTM.GARAND_${nprof}_${numband} INPUT_RRTM
+	rrtm_f90_sgl 2>&1 | tee OUTPUT_TXT.GARAND_${nprof}_${numband}
+	\mv OUTPUT_RRTM OUTPUT_RRTM.GARAND_${nprof}_${numband}
+	let nprof=nprof+1
+    done
+    cd ..
+done
+cd ..
+
+echo Finish

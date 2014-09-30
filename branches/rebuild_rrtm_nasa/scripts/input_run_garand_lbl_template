@@ -1,0 +1,25 @@
+# INPUT SPECIFICATIONS FOR GARAND_PROFILES_KEYSPECIES
+
+# Start channel
+runband=( 3 5 )
+
+# Start profile
+nprofbeg=1
+
+# End profile
+nprofend=42
+
+# Set lbl_input_file directories
+infiledir=/project/p1770/jdelamer/garand_validation_atmospheres_input/garand_profiles
+
+# Directory to put results
+resdir=/project/p1770/jdelamer/garand_validation_atmospheres_output/garand_profiles/tst_lbl_v5.21_aer_jpl_hitran_96_v2.0
+
+# LBLRTM executable and directory
+lblexe=/project/p1770/jdelamer/AER_CODES/lblrtm_versions/lblrtm_v5.21/lblrtm_v5.21_linux_pgi_sgl
+
+# TAPE3
+t3exe=/project/p1770/jdelamer/AER_CODES/create_tape3s/t3_aer_jpl_hitran_96_v2.0_nolinerejection/TAPE3
+
+# Radsum
+radsumexe=/project/p1770/jdelamer/AER_CODES/radsum_versions/original-flrt-version/radsum_flrt_linux_pgi_f90_sgl
