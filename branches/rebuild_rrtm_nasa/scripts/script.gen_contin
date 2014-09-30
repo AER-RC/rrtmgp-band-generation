@@ -40,7 +40,7 @@ foreach ilev ( 1 2 )
   rm tmp
   ${exedir}/kdis_2sort_self < input_param_self
   rm input_param_self
-  mv -f CK_ABS_for.DAT ${kgfile}		
+  mv -f CK_ABS_SELF.DAT ${kgfile}		
 end	
 
 #Generate TAPE5s for foreign-continuum
