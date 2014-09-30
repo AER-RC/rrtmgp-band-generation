@@ -62,11 +62,10 @@
       mv -f flxupdn.dat OUTPUT_LBLRTM.GARAND_${iprof}_${ich}
 
       ${scriptdir}/script.cleanup
-      let iprof += 1
+      ((iprof++))
     done
     `echo date` 
     ${scriptdir}/script.cleanup
-    let ich += 1
     cd ..
   done
   ${scriptdir}/script.cleanup

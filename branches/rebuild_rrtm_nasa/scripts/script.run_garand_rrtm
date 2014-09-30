@@ -39,7 +39,7 @@ for numband in ${runband[@]}; do
 	\ln -sfn ${infiledir}/${resdirl}/INPUT_RRTM.GARAND_${nprof}_${numband} INPUT_RRTM
 	rrtm_f90_sgl 2>&1 | tee OUTPUT_TXT.GARAND_${nprof}_${numband}
 	\mv OUTPUT_RRTM OUTPUT_RRTM.GARAND_${nprof}_${numband}
-	let nprof=nprof+1
+	((nprof++))
     done
     cd ..
 done
