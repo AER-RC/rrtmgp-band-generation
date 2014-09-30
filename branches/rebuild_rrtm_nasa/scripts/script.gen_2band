@@ -32,8 +32,8 @@ else
 endif
 
 #Copy files to the directories that need it.
-cp $2 $1/input_codes
-cp $3 $1/input_param
+cp $2 $rdir/$1/input_codes
+cp $3 $rdir/$1/input_param
 
 # Moving to build directory
 cd $rdir/$1
