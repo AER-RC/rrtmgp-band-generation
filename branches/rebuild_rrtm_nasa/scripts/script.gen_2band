@@ -272,6 +272,9 @@ foreach f ($datafile)
   endif
 end
 
+echo Cleanup
+${scriptdir}/script.cleanup
+
 echo FINISH TIME: `date` >> build_info.txt
 
 

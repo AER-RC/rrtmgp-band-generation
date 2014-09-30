@@ -1,0 +1,10 @@
+#!/bin/bash
+# Generic script to clean up build and run LBL files.
+
+flist=( "ODint_*" "NCint_*" "TAPE5" "TAPE6" "TAPE7" "TAPE9" "TAPE1?" "TAPE3?" "TAPE6?" "RADSUM" "RADINIT")
+
+for f in ${flist[@]}; do
+  if [ -e $f ]; then
+    rm $f
+  fi
+done
