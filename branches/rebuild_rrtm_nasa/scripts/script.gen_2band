@@ -262,6 +262,16 @@ if ($icalccontnm == 1) then
     ${scriptdir}/script.gen_contin $2
 endif
 
+echo Combine all absorption coefficients
+set datafile = ( "DATA.KG" "DATA.CONT" "DATA.PLANCK")
+touch DATA.FULL
+foreach f ($datafile)
+  if (-e $f) then
+    echo Adding $f to DATA.FULL
+    cat $f >> DATA.FULL
+  endif
+end
+
 echo FINISH TIME: `date` >> build_info.txt
 
 
