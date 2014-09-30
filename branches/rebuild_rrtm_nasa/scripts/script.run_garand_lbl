@@ -4,6 +4,9 @@
   echo Sourcing $1
   source $1
 
+# Determine directory for script so you can access other relevant scripts
+  scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
   if [ ${runband[0]} == "ALL" ]; then
     runband=( 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 )
   fi
@@ -58,36 +61,12 @@
       ./radsum_f90_sgl
       mv -f flxupdn.dat OUTPUT_LBLRTM.GARAND_${iprof}_${ich}
 
-      rm -f OD*
-      rm -f TAPE31
-      rm -f TAPE32
-      rm -f TAPE33
-      rm -f TAPE61
-      rm -f TAPE62
-      rm -f TAPE63
-      rm -f TAPE5
-      rm -f TAPE6
-      rm -f TAPE9
-      rm -f TAPE10
-      rm -f TAPE11
-      rm -f TAPE12
-
+      ${scriptdir}/script.cleanup
       let iprof += 1
     done
     `echo date` 
-    rm -f OD*
-    rm -f TAPE31
-    rm -f TAPE32
-    rm -f TAPE33
-    rm -f TAPE61
-    rm -f TAPE62
-    rm -f TAPE63
-    rm -f TAPE5
-    rm -f TAPE6
-    rm -f TAPE9
-    rm -f TAPE10
-    rm -f TAPE11
-    rm -f TAPE12
+    ${scriptdir}/script.cleanup
     let ich += 1
     cd ..
   done
+  ${scriptdir}/script.cleanup
