@@ -61,7 +61,9 @@ for im=0,nminor[0]-1 do begin
    endfor
 
    ; Use exponential interpolation to obtain values at 7.2 degree increment,
-   tfac_a = (tnew-tlev_a-15.)/15.0
+   ; !!!! The expression for tfac_a used to build the minor species Ks for Kaust was incorrect!!!
+   ; Correct expression is tfac_a = (tnew-(tlev_a-15.))/15.0
+   tfac_a = (tnew-(tlev_a-15.))/15.0
    mo3_a = fltarr(neta[0],16,nt)
 
    for j=0,15 do begin
@@ -76,7 +78,8 @@ for im=0,nminor[0]-1 do begin
 
    for i=0,15 do begin
        for j=0,neta[0]-1 do begin
-	   printf,2,format='(a17,a3,a1,i2,a4,i2,a13)','      DATA (KA_M',molec_arr_a[im],'(',j+1,',JT,',i+1,'),JT=1,19)  /'
+	   if (neta[0] GT 1) then printf,2,format='(a17,a3,a1,i2,a4,i2,a13)','      DATA (KA_M',molec_arr_a[im],'(',j+1,',JT,',i+1,'),JT=1,19)  /' $
+	   else  printf,2,format='(a17,a3,a1,a4,i2,a13)','      DATA (KA_M',molec_arr_a[im],'(','JT,',i+1,'),JT=1,19)  /' 
 	   printf,2,format='(5x,a1,5(1x,e11.5,a1))','&',mo3_a(j,i,0),',',   $
 		   mo3_a(j,i,1),',',mo3_a(j,i,2),',',mo3_a(j,i,3),',', $
 		   mo3_a(j,i,4),','
@@ -122,12 +125,14 @@ for im=0,nminor[1]-1 do begin
    endfor
 
    ; Use exponential interpolation to obtain values at 7.2 degree increment,
-   tfac_b = (tnew-tlev_b-15.)/15.0
+   tfac_b = (tnew-(tlev_b-15.))/15.0
    mo3_b = fltarr(neta[1],16,nt)
 
    for j=0,15 do begin
        for k=0,nt-1 do begin
 	   for m=0,neta[1]-1 do begin	
+           if (mo3_b_1(m,j) EQ 0.0) then mo3_b_1(m,j) = 1.0e-12
+           if (mo3_b_2(m,j) EQ 0.0) then mo3_b_2(m,j) = 1.0e-12
 	   mo3_b(m,j,k) =  mo3_b_1(m,j)*(mo3_b_2(m,j)/mo3_b_1(m,j))^tfac_b(k)
 	   endfor
        endfor
@@ -137,7 +142,8 @@ for im=0,nminor[1]-1 do begin
 
    for i=0,15 do begin
        for j=0,neta[1]-1 do begin
-	   printf,2,format='(a17,a3,a1,i2,a4,i2,a13)','      DATA (KB_M',molec_arr_b[im],'(',j+1,',JT,',i+1,'),JT=1,19)  /'
+	   if (neta[1] GT 1) then printf,2,format='(a17,a3,a1,i2,a4,i2,a13)','      DATA (KB_M',molec_arr_b[im],'(',j+1,',JT,',i+1,'),JT=1,19)  /' $
+	   else  printf,2,format='(a17,a3,a1,a4,i2,a13)','      DATA (KB_M',molec_arr_b[im],'(','JT,',i+1,'),JT=1,19)  /' 
 	   printf,2,format='(5x,a1,5(1x,e11.5,a1))','&',mo3_b(j,i,0),',',   $
 		   mo3_b(j,i,1),',',mo3_b(j,i,2),',',mo3_b(j,i,3),',', $
 		   mo3_b(j,i,4),','
